@@ -1,0 +1,18 @@
+{% extends "backoffice/base.html" %}
+{% block title %}{% if object %}Edit{% else %}New{% endif %} {{ vs_title|lower }}{% endblock %}
+{% block breadcrumb %}{% if vs.section %}<li>{{ vs.section }}</li>{% endif %}<li><a href="{{ list_url }}">{{ vs_title_plural }}</a></li><li>{% if object %}{{ object }}{% else %}New{% endif %}</li>{% endblock %}
+{% block page_title %}{% if object %}Edit {{ vs_title|lower }}{% else %}New {{ vs_title|lower }}{% endif %}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 44rem">
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" with form=form %}
+      <div class="d-flex gap-2">
+        <button class="btn btn-primary" type="submit">Save</button>
+        <a class="btn btn-outline-secondary" href="{{ list_url }}">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

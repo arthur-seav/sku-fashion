@@ -1,0 +1,14 @@
+{% load ui %}{% if provider.requires_receipt %}
+<hr>
+{% if payment.receipt_image %}
+  <div class="small mb-2">{% icon "receipt" %} Receipt uploaded{% if payment.status == "PENDING" %} — awaiting confirmation{% endif %}.</div>
+  <a href="{{ payment.receipt_image.url }}" target="_blank"><img src="{{ payment.receipt_image.url }}" class="w-100 rounded border" style="max-height: 12rem; object-fit: cover" alt="Receipt"></a>
+{% endif %}
+{% if payment.status == "PENDING" and order.status == "PENDING_PAYMENT" %}
+  <form method="post" enctype="multipart/form-data" action="{% url 'orders:upload_receipt' order.order_no %}" class="mt-2">
+    {% csrf_token %}
+    {% include "partials/form_fields.html" with form=receipt_form %}
+    <button class="btn btn-primary btn-sm w-100" type="submit">{% icon "receipt" %} {% if payment.receipt_image %}Replace{% else %}Upload{% endif %} receipt</button>
+  </form>
+{% endif %}
+{% endif %}

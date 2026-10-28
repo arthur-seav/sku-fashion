@@ -5,7 +5,20 @@ from django.urls import include, path
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
+    # Storefront
     path("", include("core.urls")),
+    path("shop/", include("catalog.urls")),
+    path("cart/", include("cart.urls")),
+    path("orders/", include("orders.urls")),
+    path("account/", include("accounts.urls")),
+    # Back-office (Staff / Admin)
+    path("backoffice/", include("reporting.urls")),
+    path("backoffice/accounts/", include("accounts.backoffice_urls")),
+    path("backoffice/catalog/", include("catalog.backoffice_urls")),
+    path("backoffice/inventory/", include("inventory.backoffice_urls")),
+    path("backoffice/promotions/", include("promotions.backoffice_urls")),
+    path("backoffice/shipping/", include("shipping.backoffice_urls")),
+    path("backoffice/orders/", include("orders.backoffice_urls")),
 ]
 
 if settings.DEBUG:

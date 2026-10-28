@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Cancel {{ order.order_no }} · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="card mx-auto" style="max-width: 36rem">
+  <div class="card-body">
+    <h1 class="h5">Cancel order {{ order.order_no }}?</h1>
+    {% if order.is_cancellable %}
+      <p class="text-muted">The items go back to stock and any coupon you used becomes available again.
+        {% if order.status == "PAID" %}<strong>You have already paid — our staff will issue your refund.</strong>{% endif %}</p>
+      <form method="post" class="d-flex gap-2">
+        {% csrf_token %}
+        <button class="btn btn-danger" type="submit">Yes, cancel the order</button>
+        <a class="btn btn-outline-secondary" href="{% url 'orders:order_detail' order.order_no %}">Keep it</a>
+      </form>
+    {% else %}
+      <p class="mb-3">This order is {{ order.get_status_display|lower }} and can no longer be cancelled. Shipped orders are handled as returns, which are not available in this release.</p>
+      <a class="btn btn-outline-secondary" href="{% url 'orders:order_detail' order.order_no %}">Back to order</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

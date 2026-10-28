@@ -1,0 +1,17 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Edit {{ object.sku }}{% endblock %}
+{% block breadcrumb %}<li>Catalog</li><li><a href="{% url 'catalog_bo:product_list' %}">Products</a></li><li><a href="{% url 'catalog_bo:product_detail' object.product_id %}">{{ object.product.name }}</a></li><li>{{ object.sku }}</li>{% endblock %}
+{% block page_title %}Edit variant {{ object.sku }}{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{{ object.spec }} · stock {{ object.stock_qty }} (change stock through Adjust stock)</p>{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 32rem">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" with form=form %}
+      <button class="btn btn-primary" type="submit">Save</button>
+      <a class="btn btn-outline-secondary" href="{% url 'catalog_bo:product_detail' object.product_id %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

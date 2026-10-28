@@ -1,0 +1,23 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Stock movements{% endblock %}
+{% block breadcrumb %}<li>Inventory</li><li>Stock movements</li>{% endblock %}
+{% block page_title %}Stock movements{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Append-only log of every stock change: manual adjustments, order deductions and cancellation restores.</p>{% endblock %}
+{% block content %}
+<form class="filter-bar mb-3" method="get">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="SKU, product, order no., reason">
+  <select class="form-select" name="type">
+    <option value="">In & out</option>
+    <option value="IN" {% if request.GET.type == "IN" %}selected{% endif %}>In</option>
+    <option value="OUT" {% if request.GET.type == "OUT" %}selected{% endif %}>Out</option>
+  </select>
+  <input class="form-control" type="date" name="start" value="{{ request.GET.start }}" title="From">
+  <input class="form-control" type="date" name="end" value="{{ request.GET.end }}" title="To">
+  <button class="btn btn-outline-secondary" type="submit">{% icon "funnel" %} Filter</button>
+</form>
+<div class="card">
+  {% include "inventory/partials/movement_table.html" with show_variant=True %}
+  {% include "backoffice/partials/pagination.html" %}
+</div>
+{% endblock %}

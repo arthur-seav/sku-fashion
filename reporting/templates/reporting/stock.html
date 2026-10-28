@@ -1,0 +1,35 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Stock report{% endblock %}
+{% block breadcrumb %}<li>Reports</li><li>Stock</li>{% endblock %}
+{% block page_title %}Stock report{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Active variants below their safety level or sold out.</p>{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if kind == 'alert' %}active{% endif %}" href="?kind=alert">All alerts <span class="badge tone-outline ms-1">{{ summary.sold_out|add:summary.low }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if kind == 'low' %}active{% endif %}" href="?kind=low">Below safety level <span class="badge tone-warning ms-1">{{ summary.low }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if kind == 'sold_out' %}active{% endif %}" href="?kind=sold_out">Sold out <span class="badge tone-danger ms-1">{{ summary.sold_out }}</span></a></li>
+</ul>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>SKU</th><th>Product</th><th>Variant</th><th class="text-end">Stock</th><th class="text-end">Safety level</th><th class="text-end">Short by</th><th></th></tr></thead>
+      <tbody>
+      {% for v in variants %}
+        <tr>
+          <td><code>{{ v.sku }}</code></td>
+          <td>{{ v.product.name }}</td>
+          <td><span class="color-swatch me-1" style="background:{{ v.color.hex_code }}"></span>{{ v.spec }}</td>
+          <td class="text-end">{% if v.stock_qty %}<span class="badge tone-warning">{{ v.stock_qty }}</span>{% else %}<span class="badge tone-danger">0</span>{% endif %}</td>
+          <td class="text-end text-muted">{{ v.safety_level }}</td>
+          <td class="text-end fw-medium">{{ v.shortfall }}</td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'inventory_bo:adjust' v.pk %}">{% icon "boxes" %} Restock</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">Nothing to restock.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

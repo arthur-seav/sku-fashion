@@ -1,0 +1,1 @@
+{% load ui %}{% if order.is_cancellable %}<a class="btn btn-sm btn-danger" href="{% url 'orders:order_cancel' order.order_no %}">{% icon "circle-x" %} Cancel order</a>{% endif %}

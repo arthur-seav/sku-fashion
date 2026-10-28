@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ STORE_NAME }}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% block extra_head %}{% endblock %}
 </head>
@@ -17,7 +18,7 @@
   </main>
 
   {% block footer %}
-  <footer class="border-top py-3 mt-5 text-center text-muted small">
+  <footer class="border-top py-4 mt-5 text-center text-muted small">
     &copy; {% now "Y" %} {{ STORE_NAME }} &middot; SV34 Advanced Python Programming
   </footer>
   {% endblock %}

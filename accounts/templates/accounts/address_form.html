@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Address · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="addresses" %}</div>
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">{% if object %}Edit address{% else %}New address{% endif %}</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/form_fields.html" with form=form %}
+          <button class="btn btn-primary" type="submit">Save</button>
+          <a class="btn btn-outline-secondary" href="{% url 'accounts:address_list' %}">Cancel</a>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

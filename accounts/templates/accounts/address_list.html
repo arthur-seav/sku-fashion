@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}My addresses · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="addresses" %}</div>
+  <div class="col-9">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h1 class="h4 mb-0">Delivery addresses</h1>
+      <a class="btn btn-primary" href="{% url 'accounts:address_create' %}">{% icon "plus" %} Add address</a>
+    </div>
+    <div class="row g-3">
+      {% for address in addresses %}
+        <div class="col-6">
+          <div class="card h-100">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <strong>{{ address.recipient }}</strong>
+                {% if address.is_default %}<span class="badge tone-neutral">Default</span>{% endif %}
+              </div>
+              <div class="text-muted mt-1">{{ address.phone }}</div>
+              <div class="mt-2">{{ address.line_1 }}<br>{{ address.district }}, {{ address.province }}</div>
+            </div>
+            <div class="card-footer d-flex gap-2">
+              <a class="btn btn-sm btn-outline-secondary" href="{% url 'accounts:address_update' address.pk %}">{% icon "pencil" %} Edit</a>
+              {% if not address.is_default %}
+                <form method="post" action="{% url 'accounts:address_default' address.pk %}">
+                  {% csrf_token %}<button class="btn btn-sm btn-secondary" type="submit">Make default</button>
+                </form>
+              {% endif %}
+              <a class="btn btn-sm btn-danger ms-auto" href="{% url 'accounts:address_delete' address.pk %}">{% icon "trash-2" %}</a>
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="col-12"><div class="card"><div class="card-body text-muted">You have no saved addresses yet.</div></div></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

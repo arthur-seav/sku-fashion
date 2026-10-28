@@ -6,6 +6,7 @@ All secrets and environment-specific values are read from `.env`
 """
 
 import os
+import sys
 from decimal import Decimal
 from pathlib import Path
 
@@ -40,7 +41,22 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     # Project apps
     "core",
+    "accounts",
+    "catalog",
+    "inventory",
+    "cart",
+    "promotions",
+    "shipping",
+    "orders",
+    "payments",
+    "reporting",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["accounts.backends.LockoutAwareBackend"]
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "core:home"
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3  # set-password links stay valid for 3 days
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -65,6 +81,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.store",
+                "cart.context_processors.cart",
             ],
         },
     },
@@ -94,6 +111,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
+
+if "test" in sys.argv:
+    # Hashing speed only matters for the test run; production stays on PBKDF2.
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
@@ -134,4 +155,12 @@ DEFAULT_FROM_EMAIL = "SKU-Fashion <no-reply@sku-fashion.local>"
 # --------------------------------------------------------------------------
 STORE_NAME = "SKU-Fashion"
 STORE_CURRENCY = os.getenv("STORE_CURRENCY", "USD")
-STORE_TAX_RATE = Decimal(os.getenv("STORE_TAX_RATE", "0.10"))
+STORE_TAX_RATE = Decimal(os.getenv("STORE_TAX_RATE", "0.10"))  # VAT on the discounted subtotal
+
+# Bank-transfer details shown to customers (demo values; set real ones in .env)
+STORE_BANK_NAME = os.getenv("STORE_BANK_NAME", "ABA Bank")
+STORE_BANK_ACCOUNT_NAME = os.getenv("STORE_BANK_ACCOUNT_NAME", "SKU-Fashion Co., Ltd.")
+STORE_BANK_ACCOUNT_NO = os.getenv("STORE_BANK_ACCOUNT_NO", "000 123 456")
+
+# Unpaid bank-transfer orders are cancelled after this many hours (FR-X09)
+UNPAID_ORDER_TIMEOUT_HOURS = int(os.getenv("UNPAID_ORDER_TIMEOUT_HOURS", "24"))

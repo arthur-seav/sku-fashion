@@ -1,0 +1,9 @@
+{% load ui %}{% if shipment %}
+<hr>
+<div class="d-flex justify-content-between align-items-center">
+  <span class="fw-medium">{% icon "truck" %} {{ shipment.carrier }}</span>
+  <span class="badge {{ shipment.status|tone }}">{{ shipment.get_status_display }}</span>
+</div>
+<div class="small mt-1">Tracking no. <code>{{ shipment.tracking_no }}</code></div>
+<div class="text-muted small">Shipped {{ shipment.shipped_at|date:"d M Y H:i" }}{% if shipment.delivered_at %} · Delivered {{ shipment.delivered_at|date:"d M Y H:i" }}{% endif %}</div>
+{% endif %}

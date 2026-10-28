@@ -1,0 +1,117 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Dashboard{% endblock %}
+{% block breadcrumb %}<li>Dashboard</li><li>Overview</li>{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{% now "l, j F Y" %} · revenue excludes cancelled orders</p>{% endblock %}
+{% block page_actions %}<a class="btn btn-outline-secondary" href="{% url 'reporting:sales' %}">{% icon "chart-column" %} Sales report</a>{% endblock %}
+{% block content %}
+{# Row 1 — statistic cards (AdminCN statistics-card-01) #}
+<div class="row g-4 mb-4">
+  <div class="col-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="d-flex align-items-center gap-2"><span class="stat-icon">{% icon "dollar-sign" %}</span><span class="stat-value">{{ today_revenue|money }}</span></div>
+      <div class="stat-title">Today's revenue</div>
+      <div class="stat-sub">{{ week_revenue|money }} over the last 7 days</div>
+    </div></div>
+  </div>
+  <div class="col-3">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="d-flex align-items-center gap-2"><span class="stat-icon">{% icon "shopping-bag" %}</span><span class="stat-value">{{ today_orders }}</span></div>
+      <div class="stat-title">Orders today</div>
+      <div class="stat-sub">{{ today_cancelled }} cancelled today</div>
+    </div></div>
+  </div>
+  <div class="col-3">
+    <a class="text-decoration-none" href="{% url 'orders_bo:order_list' %}?awaiting=1">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="d-flex align-items-center gap-2"><span class="stat-icon">{% icon "clock" %}</span><span class="stat-value">{{ awaiting_total }}</span></div>
+      <div class="stat-title">Awaiting action</div>
+      <div class="stat-sub">{{ awaiting.to_reconcile }} to reconcile · {{ awaiting.to_prepare }} to prepare · {{ awaiting.to_ship }} to ship</div>
+    </div></div></a>
+  </div>
+  <div class="col-3">
+    <a class="text-decoration-none" href="{% url 'reporting:stock' %}">
+    <div class="card stat-card h-100"><div class="card-body">
+      <div class="d-flex align-items-center gap-2"><span class="stat-icon">{% icon "triangle-alert" %}</span><span class="stat-value">{{ low_stock_count }}</span></div>
+      <div class="stat-title">Low-stock items</div>
+      <div class="stat-sub">Variants below their safety level</div>
+    </div></div></a>
+  </div>
+</div>
+
+{# Row 2 — sales chart + metric tiles (AdminCN "Sales metrics") #}
+<div class="row g-4 mb-4">
+  <div class="col-8">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div><div class="card-title">Revenue, last 7 days</div><div class="card-description">Daily totals of non-cancelled orders</div></div>
+          <span class="fs-4 fw-semibold">{{ week_revenue|money }}</span>
+        </div>
+        <div class="bar-chart">
+          {% for d in week %}<div class="bar {% if not forloop.last %}muted{% endif %}" style="--h: {{ d.pct }}%" title="{{ d.bucket|date:'D j M' }}: {{ d.revenue|money }} · {{ d.orders }} orders"></div>{% endfor %}
+        </div>
+        <div class="bar-labels">{% for d in week %}<span>{{ d.bucket|date:"D j" }}</span>{% endfor %}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <div class="card-title mb-3">Best sellers · 30 days</div>
+        {% for b in best_sellers %}
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-truncate me-2"><div class="fw-medium text-truncate">{{ b.name }}</div><div class="text-muted small">{{ b.qty }} sold · {{ b.orders }} orders</div></div>
+            <span class="fw-medium">{{ b.revenue|money }}</span>
+          </div>
+        {% empty %}<p class="text-muted">No sales yet.</p>{% endfor %}
+        <a class="small" href="{% url 'reporting:best_sellers' %}">Full ranking</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# Row 3 — tables (AdminCN data table) #}
+<div class="row g-4">
+  <div class="col-7">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between"><span>Orders awaiting action</span><a class="small fw-normal" href="{% url 'orders_bo:order_list' %}?awaiting=1">View all</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead><tr><th>Order</th><th>Customer</th><th class="text-end">Total</th><th>Status</th></tr></thead>
+          <tbody>
+          {% for o in awaiting_orders %}
+            <tr>
+              <td><a class="fw-medium text-decoration-none" href="{% url 'orders_bo:order_detail' o.order_no %}">{{ o.order_no }}</a><div class="text-muted small">{{ o.placed_at|timesince }} ago</div></td>
+              <td>{{ o.user.full_name }}<div class="text-muted small">{{ o.user.email }}</div></td>
+              <td class="text-end">{{ o.grand_total|money }}</td>
+              <td><span class="badge {{ o.status|tone }}">{{ o.get_status_display }}</span>{% if o.status == "PENDING_PAYMENT" %} <span class="badge tone-info">Receipt</span>{% endif %}</td>
+            </tr>
+          {% empty %}<tr><td colspan="4" class="text-center text-muted py-4">Nothing waiting — all caught up.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-5">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between"><span>Low stock</span><a class="small fw-normal" href="{% url 'reporting:stock' %}">Stock report</a></div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead><tr><th>Variant</th><th class="text-end">Stock</th><th class="text-end">Safety</th></tr></thead>
+          <tbody>
+          {% for v in low_stock %}
+            <tr>
+              <td><a class="text-decoration-none" href="{% url 'inventory_bo:adjust' v.pk %}">{{ v.product.name }}</a><div class="text-muted small">{{ v.spec }} · {{ v.sku }}</div></td>
+              <td class="text-end">{% if v.stock_qty %}<span class="badge tone-warning">{{ v.stock_qty }}</span>{% else %}<span class="badge tone-danger">Sold out</span>{% endif %}</td>
+              <td class="text-end text-muted">{{ v.safety_level }}</td>
+            </tr>
+          {% empty %}<tr><td colspan="3" class="text-center text-muted py-4">All variants above safety level.</td></tr>{% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

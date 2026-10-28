@@ -1,0 +1,79 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Back-office accounts{% endblock %}
+{% block breadcrumb %}<li>Administration</li><li>Back-office accounts</li>{% endblock %}
+{% block page_title %}Back-office accounts{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Staff and admin accounts. Customers register themselves from the storefront.</p>{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{% url 'accounts_bo:account_create' %}">{% icon "plus" %} New account</a>{% endblock %}
+{% block content %}
+<form class="filter-bar mb-3" method="get">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search name or email">
+  <select class="form-select" name="role">
+    <option value="">All roles</option>
+    <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Staff</option>
+    <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Admin</option>
+  </select>
+  <select class="form-select" name="status">
+    <option value="">Any status</option>
+    <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Active</option>
+    <option value="inactive" {% if request.GET.status == "inactive" %}selected{% endif %}>Deactivated</option>
+  </select>
+  <button class="btn btn-outline-secondary" type="submit">{% icon "funnel" %} Filter</button>
+</form>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Account</th><th>Role</th><th>Status</th><th>Last sign-in</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+      {% for account in accounts %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-2">
+              <span class="bo-avatar">{{ account.first_name|slice:":1"|upper }}{{ account.last_name|slice:":1"|upper }}</span>
+              <div>
+                <div class="fw-medium">{{ account.full_name }}{% if account == request.user %} <span class="text-muted">(you)</span>{% endif %}</div>
+                <div class="text-muted">{{ account.email }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <form method="post" action="{% url 'accounts_bo:account_action' account.pk 'role' %}" class="d-flex gap-1">
+              {% csrf_token %}
+              <select name="role" class="form-select form-select-sm" style="width: 7rem" onchange="this.form.submit()">
+                <option value="STAFF" {% if account.role == "STAFF" %}selected{% endif %}>Staff</option>
+                <option value="ADMIN" {% if account.role == "ADMIN" %}selected{% endif %}>Admin</option>
+              </select>
+            </form>
+          </td>
+          <td>
+            {% if account.is_active %}<span class="badge tone-success">Active</span>{% else %}<span class="badge tone-danger">Deactivated</span>{% endif %}
+            {% if account.is_locked %}<span class="badge tone-warning">Locked</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ account.last_login|default:"Never" }}</td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-1">
+              <form method="post" action="{% url 'accounts_bo:account_action' account.pk 'reset-password' %}">
+                {% csrf_token %}<button class="btn btn-sm btn-outline-secondary" type="submit">{% icon "key-round" %} Reset password</button>
+              </form>
+              {% if account.is_active %}
+                <form method="post" action="{% url 'accounts_bo:account_action' account.pk 'deactivate' %}" onsubmit="return confirm('Deactivate {{ account.email }}?')">
+                  {% csrf_token %}<button class="btn btn-sm btn-danger" type="submit" {% if account == request.user %}disabled title="You cannot deactivate your own account"{% endif %}>{% icon "power" %} Deactivate</button>
+                </form>
+              {% else %}
+                <form method="post" action="{% url 'accounts_bo:account_action' account.pk 'activate' %}">
+                  {% csrf_token %}<button class="btn btn-sm btn-success" type="submit">{% icon "power" %} Reactivate</button>
+                </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5" class="text-muted text-center">No accounts match.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "backoffice/partials/pagination.html" %}
+</div>
+{% endblock %}
