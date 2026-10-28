@@ -148,6 +148,9 @@ class SizeChart(models.Model):
     content = models.TextField(help_text="One row per line, columns separated by “|”. "
                                          "The first line is the header, e.g. <code>Size | Chest (cm) | Length (cm)</code>")
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 

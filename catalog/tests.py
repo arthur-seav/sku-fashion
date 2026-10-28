@@ -116,3 +116,69 @@ class BackofficeCatalogViewTests(TestCase):
         sku = ProductVariant.objects.get().sku
         response = self.client.get(reverse("catalog_bo:product_list"), {"q": sku})
         self.assertContains(response, "Linen Shirt")
+
+
+class StorefrontCatalogTests(TestCase):
+    """UC-03 / UC-04, FR-G02 / FR-G03, NFR-01."""
+
+    @classmethod
+    def setUpTestData(cls):
+        from core.testing import make_variant
+        from .models import Brand, Material
+        women = Category.objects.create(name="Women")
+        cls.tops = Category.objects.create(name="Women Tops", parent=women)
+        men = Category.objects.create(name="Men")
+        cls.tee = make_product("Cotton Tee", "15.00", category=cls.tops)
+        cls.tee.materials.add(Material.objects.create(name="Cotton"))
+        make_variant(cls.tee, color="Black", size="S", stock=5)
+        make_variant(cls.tee, color="White", size="L", stock=0, delta="2.00")
+        cls.jacket = make_product("Denim Jacket", "60.00", category=men,
+                                  brand=Brand.objects.create(name="Mekong"))
+        make_variant(cls.jacket, color="Blue", size="M", stock=3)
+        cls.hidden = make_product("Hidden", "10.00", is_active=False)
+        make_variant(cls.hidden, color="Black", size="M")
+        cls.no_variants = make_product("No Variants", "10.00")
+
+    def _names(self, **params):
+        response = self.client.get(reverse("catalog:product_list"), params)
+        return sorted(p.name for p in response.context["products"])
+
+    def test_only_active_products_with_active_variants_listed(self):
+        self.assertEqual(self._names(), ["Cotton Tee", "Denim Jacket"])
+
+    def test_category_includes_subcategories(self):
+        self.assertEqual(self._names(category="women"), ["Cotton Tee"])
+
+    def test_keyword_search(self):
+        self.assertEqual(self._names(q="denim"), ["Denim Jacket"])
+
+    def test_filter_by_size_color_material_brand(self):
+        self.assertEqual(self._names(size=Size.objects.get(name="L").pk), ["Cotton Tee"])
+        self.assertEqual(self._names(color=Color.objects.get(name="Blue").pk), ["Denim Jacket"])
+        from .models import Brand, Material
+        self.assertEqual(self._names(material=Material.objects.get().pk), ["Cotton Tee"])
+        self.assertEqual(self._names(brand=Brand.objects.get(name="Mekong").pk), ["Denim Jacket"])
+
+    def test_filter_by_price_range_uses_lowest_variant_price(self):
+        self.assertEqual(self._names(min_price="10", max_price="20"), ["Cotton Tee"])
+
+    def test_listing_query_count_is_constant(self):
+        from core.testing import make_variant
+        for i in range(10):
+            make_variant(make_product(f"Extra {i}", "9.00"), color="Black", size="S")
+        url = reverse("catalog:product_list")
+        self.client.get(url)  # warm up
+        with self.assertNumQueries(10):
+            self.client.get(url)
+
+    def test_detail_shows_variants_stock_and_size_chart(self):
+        from .models import SizeChart
+        SizeChart.objects.create(category=self.tops, name="Tops chart", content="Size | Chest\nS | 86")
+        response = self.client.get(reverse("catalog:product_detail", args=[self.tee.slug]))
+        self.assertContains(response, "Sold out")
+        self.assertContains(response, "Tops chart")
+        self.assertContains(response, "Chest")
+
+    def test_inactive_product_detail_is_404(self):
+        response = self.client.get(reverse("catalog:product_detail", args=[self.hidden.slug]))
+        self.assertEqual(response.status_code, 404)

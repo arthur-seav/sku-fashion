@@ -7,6 +7,7 @@ urlpatterns = [
     path("django-admin/", admin.site.urls),
     # Storefront
     path("", include("core.urls")),
+    path("shop/", include("catalog.urls")),
     path("account/", include("accounts.urls")),
     # Back-office (Staff / Admin)
     path("backoffice/", include("reporting.urls")),

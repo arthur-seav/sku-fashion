@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}{{ product.name }} · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<nav class="small text-muted mb-3">
+  <a class="text-decoration-none text-muted" href="{% url 'catalog:product_list' %}">Shop</a>
+  {% for c in breadcrumbs %} › <a class="text-decoration-none text-muted" href="{% url 'catalog:product_list' %}?category={{ c.slug }}">{{ c.name }}</a>{% endfor %}
+</nav>
+
+<div class="row g-5">
+  <div class="col-6">
+    {% with images=product.images.all %}
+      {% if images %}
+        <div class="row g-2">
+          {% for image in images %}
+            <div class="{% if forloop.first %}col-12{% else %}col-3{% endif %}">
+              <img class="product-img-lg" src="{{ image.image.url }}" alt="{{ product.name }}{% if image.color %} — {{ image.color }}{% endif %}">
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="product-img-lg"></div>
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  <div class="col-6">
+    <div class="text-muted">{{ product.brand.name }}</div>
+    <h1 class="h2 mb-2">{{ product.name }}</h1>
+    <div class="fs-4 mb-3" id="price-display">
+      {% if product.sale_price is not None and product.sale_price < product.min_price %}
+        <span class="price-sale">{{ product.sale_price|money }}</span> <span class="price-original">{{ product.min_price|money }}</span>
+        {% if campaign %}<span class="badge tone-danger ms-2">{{ campaign.name }}</span>{% endif %}
+      {% else %}
+        {% if variants|length > 1 %}<span class="text-muted fs-6">From</span> {% endif %}{{ product.min_price|money }}
+      {% endif %}
+    </div>
+
+    {% if variants %}
+      {% url 'cart:add' as add_url %}
+      <form method="post" action="{{ add_url }}">
+        {% csrf_token %}
+        {% for color, color_variants in variants_by_color %}
+          <div class="mb-3">
+            <div class="mb-2"><span class="color-swatch me-1" style="background:{{ color.hex_code }}"></span><strong>{{ color.name }}</strong></div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for v in color_variants %}
+                <input type="radio" class="btn-check" name="variant" id="v-{{ v.pk }}" value="{{ v.pk }}" {% if v.is_sold_out %}disabled{% endif %} required>
+                <label class="btn btn-outline-secondary" for="v-{{ v.pk }}" title="{{ v.sku }}">
+                  {{ v.size.name }}
+                  <span class="small {% if v.is_sold_out %}text-danger{% elif v.is_low_stock %}text-warning{% else %}text-muted{% endif %}">
+                    · {% if v.is_sold_out %}Sold out{% elif v.is_low_stock %}Only {{ v.stock_qty }} left{% else %}{{ v.unit_price|default:v.price|money }}{% endif %}
+                  </span>
+                </label>
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+        {% if add_url %}
+          <div class="d-flex gap-2 align-items-center mt-4">
+            <input class="form-control" type="number" name="quantity" value="1" min="1" style="width: 6rem">
+            <button class="btn btn-primary btn-lg" type="submit">{% icon "shopping-bag" %} Add to cart</button>
+          </div>
+        {% endif %}
+      </form>
+    {% else %}
+      <p class="text-muted">This product is currently unavailable.</p>
+    {% endif %}
+
+    {% if product.description %}
+      <hr class="my-4">
+      <h2 class="h6">Description</h2>
+      <p style="white-space: pre-line">{{ product.description }}</p>
+    {% endif %}
+    {% if product.materials.all %}
+      <h2 class="h6">Materials</h2>
+      <p>{{ product.materials.all|join:", " }}</p>
+    {% endif %}
+
+    {% if size_chart %}
+      <h2 class="h6 mt-4">Size chart · {{ size_chart.name }}</h2>
+      <div class="card">
+        <table class="table table-sm mb-0">
+          {% for row in size_chart.rows %}
+            {% if forloop.first %}<thead><tr>{% for cell in row %}<th>{{ cell }}</th>{% endfor %}</tr></thead><tbody>
+            {% else %}<tr>{% for cell in row %}<td>{{ cell }}</td>{% endfor %}</tr>{% endif %}
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

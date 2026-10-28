@@ -137,6 +137,12 @@ class CrudMixin(StaffRequiredMixin):
 class CrudListView(CrudMixin, ListView):
     template_name = "backoffice/crud/list.html"
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if not qs.ordered:  # aggregate queries drop Meta.ordering; keep paging stable
+            qs = qs.order_by(*(self.viewset.model._meta.ordering or ["pk"]))
+        return qs
+
     def get_paginate_by(self, queryset):
         return self.viewset.paginate_by
 
