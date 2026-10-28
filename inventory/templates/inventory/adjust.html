@@ -1,0 +1,44 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Adjust stock · {{ variant.sku }}{% endblock %}
+{% block breadcrumb %}<li>Inventory</li><li><a href="{% url 'inventory_bo:stock_list' %}">Stock levels</a></li><li>{{ variant.sku }}</li>{% endblock %}
+{% block page_title %}Adjust stock{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{{ variant.product.name }} · {{ variant.spec }} · <code>{{ variant.sku }}</code></p>{% endblock %}
+{% block page_actions %}<a class="btn btn-outline-secondary" href="{% url 'catalog_bo:product_detail' variant.product_id %}">{% icon "shirt" %} Product</a>{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-4">
+    <div class="card stat-card mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center gap-2">
+          <span class="stat-icon">{% icon "boxes" %}</span>
+          <span class="stat-value">{{ variant.stock_qty }}</span>
+        </div>
+        <div class="stat-title">Current stock</div>
+        <div class="stat-sub">Safety level {{ variant.safety_level }} ·
+          {% if variant.is_sold_out %}<span class="text-danger">sold out</span>{% elif variant.is_low_stock %}<span class="text-warning">below safety level</span>{% else %}healthy{% endif %}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">New adjustment</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/form_fields.html" with form=form %}
+          <datalist id="reason-suggestions">{% for r in reason_suggestions %}<option value="{{ r }}">{% endfor %}</datalist>
+          <button class="btn btn-primary w-100" type="submit">Record adjustment</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between">
+        <span>Recent movements</span>
+        <a class="small fw-normal" href="{% url 'inventory_bo:movement_list' %}?q={{ variant.sku }}">View all</a>
+      </div>
+      {% include "inventory/partials/movement_table.html" with show_variant=False %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Stock levels{% endblock %}
+{% block breadcrumb %}<li>Inventory</li><li>Stock levels</li>{% endblock %}
+{% block page_title %}Stock levels{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Single stock location. Every change is recorded in the movement history.</p>{% endblock %}
+{% block page_actions %}<a class="btn btn-outline-secondary" href="{% url 'inventory_bo:movement_list' %}">{% icon "history" %} Movement history</a>{% endblock %}
+{% block content %}
+<form class="filter-bar mb-3" method="get">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="SKU or product">
+  <select class="form-select" name="status">
+    <option value="">All variants</option>
+    <option value="alert" {% if request.GET.status == "alert" %}selected{% endif %}>Needs restock (low + sold out)</option>
+    <option value="low" {% if request.GET.status == "low" %}selected{% endif %}>Low stock</option>
+    <option value="sold_out" {% if request.GET.status == "sold_out" %}selected{% endif %}>Sold out</option>
+  </select>
+  <button class="btn btn-outline-secondary" type="submit">{% icon "funnel" %} Filter</button>
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>SKU</th><th>Product</th><th>Variant</th><th class="text-end">Stock</th><th class="text-end">Safety level</th><th>Status</th><th class="text-end"></th></tr></thead>
+      <tbody>
+      {% for v in variants %}
+        <tr>
+          <td><code>{{ v.sku }}</code></td>
+          <td><a class="text-decoration-none" href="{% url 'catalog_bo:product_detail' v.product_id %}">{{ v.product.name }}</a></td>
+          <td><span class="color-swatch me-1" style="background:{{ v.color.hex_code }}"></span>{{ v.spec }}</td>
+          <td class="text-end fw-medium">{{ v.stock_qty }}</td>
+          <td class="text-end text-muted">{{ v.safety_level }}</td>
+          <td>
+            {% if not v.is_active %}<span class="badge tone-outline">Inactive</span>
+            {% elif v.is_sold_out %}<span class="badge tone-danger">Sold out</span>
+            {% elif v.is_low_stock %}<span class="badge tone-warning">Low stock</span>
+            {% else %}<span class="badge tone-success">In stock</span>{% endif %}
+          </td>
+          <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="{% url 'inventory_bo:adjust' v.pk %}">{% icon "boxes" %} Adjust</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No variants match.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "backoffice/partials/pagination.html" %}
+</div>
+{% endblock %}
