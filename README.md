@@ -7,8 +7,6 @@ Fashion e-commerce management system — SV34 final project (Advanced Python Pro
 
 The requirements, use cases and ERD are in `../doc/SKU-Fashion.pdf`.
 
-A guided tour of both sites with screenshots (Traditional Chinese) is in [`docs/System-Overview.md`](docs/System-Overview.md).
-
 | | |
 |---|---|
 | Framework | Django 6.1.2 (Python 3.14) |
