@@ -1,0 +1,98 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block breadcrumb %}<li>Catalog</li><li><a href="{% url 'catalog_bo:product_list' %}">Products</a></li><li>{{ product.name }}</li>{% endblock %}
+{% block page_title %}{{ product.name }}{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{{ product.category }} · {{ product.brand }} · {% if product.is_active %}<span class="badge tone-success">Active</span>{% else %}<span class="badge tone-outline">Inactive</span>{% endif %}</p>{% endblock %}
+{% block page_actions %}
+  {% url 'catalog:product_detail' product.slug as store_url %}{% if store_url %}<a class="btn btn-outline-secondary" href="{{ store_url }}" target="_blank">{% icon "eye" %} View in store</a>{% endif %}
+  <a class="btn btn-outline-secondary" href="{% url 'catalog_bo:product_update' product.pk %}">{% icon "pencil" %} Edit</a>
+  <a class="btn btn-primary" href="{% url 'catalog_bo:variant_generate' product.pk %}">{% icon "plus" %} Generate variants</a>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-4">
+    <div class="card mb-4">
+      <div class="card-header">Details</div>
+      <div class="card-body">
+        <dl class="dl-grid">
+          <dt>Base price</dt><dd>{{ product.base_price|money }}</dd>
+          <dt>Slug</dt><dd><code>{{ product.slug }}</code></dd>
+          <dt>Materials</dt><dd>{{ product.materials.all|join:", "|default:"—" }}</dd>
+          <dt>Size chart</dt><dd>{{ product.size_chart|default:"—" }}</dd>
+          <dt>Updated</dt><dd>{{ product.updated_at|date:"d M Y H:i" }}</dd>
+        </dl>
+        {% if product.description %}<hr><p class="mb-0" style="white-space: pre-line">{{ product.description }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Images</div>
+      <div class="card-body">
+        <div class="row g-2 mb-3">
+          {% for image in product.images.all %}
+            <div class="col-4">
+              <div class="position-relative">
+                <img src="{{ image.image.url }}" class="w-100 rounded" style="aspect-ratio:3/4;object-fit:cover" alt="">
+                {% if image.is_primary %}<span class="badge tone-neutral position-absolute top-0 start-0 m-1">Primary</span>{% endif %}
+                {% if image.color %}<span class="badge tone-outline position-absolute bottom-0 start-0 m-1" style="background:var(--background)">{{ image.color }}</span>{% endif %}
+              </div>
+              <div class="d-flex gap-1 mt-1">
+                {% if not image.is_primary %}
+                <form method="post" action="{% url 'catalog_bo:product_image_action' image.pk 'primary' %}">{% csrf_token %}<button class="btn btn-sm btn-ghost" type="submit" title="Make primary">{% icon "circle-check" %}</button></form>
+                {% endif %}
+                <form method="post" action="{% url 'catalog_bo:product_image_action' image.pk 'delete' %}" onsubmit="return confirm('Delete this image?')">{% csrf_token %}<button class="btn btn-sm btn-ghost text-danger" type="submit" title="Delete">{% icon "trash-2" %}</button></form>
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-muted">No images yet.</p>
+          {% endfor %}
+        </div>
+        <form method="post" enctype="multipart/form-data" action="{% url 'catalog_bo:product_image_upload' product.pk %}">
+          {% csrf_token %}
+          {% include "partials/form_fields.html" with form=upload_form %}
+          <button class="btn btn-outline-secondary" type="submit">{% icon "image" %} Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-8">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Variants (SKU)</span>
+        <span class="text-muted fw-normal small">Stock changes go through <em>Adjust stock</em> so each one is logged.</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th class="text-end">Price</th><th class="text-end">Stock</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+          <tbody>
+          {% for v in variants %}
+            <tr class="{% if not v.is_active %}text-muted{% endif %}">
+              <td><code>{{ v.sku }}</code></td>
+              <td><span class="color-swatch me-1" style="background:{{ v.color.hex_code }}"></span>{{ v.color }}</td>
+              <td>{{ v.size }}</td>
+              <td class="text-end">{{ v.price|money }}{% if v.price_delta %} <span class="text-muted small">({% if v.price_delta > 0 %}+{% endif %}{{ v.price_delta }})</span>{% endif %}</td>
+              <td class="text-end">{{ v.stock_qty }}</td>
+              <td>
+                {% if not v.is_active %}<span class="badge tone-outline">Inactive</span>
+                {% elif v.is_sold_out %}<span class="badge tone-danger">Sold out</span>
+                {% elif v.is_low_stock %}<span class="badge tone-warning">Low · safety {{ v.safety_level }}</span>
+                {% else %}<span class="badge tone-success">In stock</span>{% endif %}
+              </td>
+              <td class="text-end text-nowrap">
+                {% url 'inventory_bo:adjust' v.pk as adjust_url %}{% if adjust_url %}<a class="btn btn-sm btn-outline-secondary" href="{{ adjust_url }}">{% icon "boxes" %} Adjust stock</a>{% endif %}
+                <a class="btn btn-sm btn-ghost btn-icon" href="{% url 'catalog_bo:variant_update' v.pk %}" title="Edit">{% icon "pencil" %}</a>
+                <form class="d-inline" method="post" action="{% url 'catalog_bo:variant_delete' v.pk %}" onsubmit="return confirm('Delete {{ v.sku }}?')">{% csrf_token %}<button class="btn btn-sm btn-ghost btn-icon text-danger" type="submit" title="Delete">{% icon "trash-2" %}</button></form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="7" class="text-center text-muted py-4">No variants yet. Use <strong>Generate variants</strong> to create them from sizes × colors.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

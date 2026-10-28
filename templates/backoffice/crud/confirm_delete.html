@@ -1,0 +1,16 @@
+{% extends "backoffice/base.html" %}
+{% block title %}Delete {{ vs_title|lower }}{% endblock %}
+{% block breadcrumb %}{% if vs.section %}<li>{{ vs.section }}</li>{% endif %}<li><a href="{{ list_url }}">{{ vs_title_plural }}</a></li><li>Delete</li>{% endblock %}
+{% block page_title %}Delete {{ vs_title|lower }}{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 36rem">
+  <div class="card-body">
+    <p>Delete <strong>{{ object }}</strong>? This cannot be undone.</p>
+    <form method="post" class="d-flex gap-2">
+      {% csrf_token %}
+      <button class="btn btn-danger" type="submit">Delete</button>
+      <a class="btn btn-outline-secondary" href="{{ list_url }}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

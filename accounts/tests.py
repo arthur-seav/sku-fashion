@@ -4,15 +4,10 @@ from django.test import RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
+from core.testing import PASSWORD, make_user
+
 from .models import Address, User
 from .services import AccountRuleError, BackofficeAccountService
-
-PASSWORD = "Str0ng-pass-123"
-
-
-def make_user(email, role=User.Role.CUSTOMER, **extra):
-    return User.objects.create_user(email=email, password=PASSWORD, first_name="Test",
-                                    last_name="User", role=role, **extra)
 
 
 class LockoutTests(TestCase):

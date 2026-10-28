@@ -1,0 +1,48 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Generate variants · {{ product.name }}{% endblock %}
+{% block breadcrumb %}<li>Catalog</li><li><a href="{% url 'catalog_bo:product_list' %}">Products</a></li><li><a href="{% url 'catalog_bo:product_detail' product.pk %}">{{ product.name }}</a></li><li>Generate variants</li>{% endblock %}
+{% block page_title %}Generate variants{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Every selected size × color becomes one SKU. Existing combinations are kept as they are.</p>{% endblock %}
+{% block content %}
+<form method="post" novalidate>
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-5">
+      <div class="card">
+        <div class="card-body">
+          {% include "partials/form_fields.html" with form=form %}
+          <button class="btn btn-outline-secondary" type="submit" name="action" value="preview">{% icon "eye" %} Preview combinations</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-7">
+      {% if combos %}
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>Preview · {{ new_count }} new of {{ combos|length }}</span>
+          <button class="btn btn-primary btn-sm" type="submit" name="action" value="confirm" {% if not new_count %}disabled{% endif %}>{% icon "circle-check" %} Confirm and create</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>SKU</th><th>Color</th><th>Size</th><th>Result</th></tr></thead>
+            <tbody>
+            {% for c in combos %}
+              <tr>
+                <td><code>{{ c.sku }}</code></td>
+                <td><span class="color-swatch me-1" style="background:{{ c.color.hex_code }}"></span>{{ c.color }}</td>
+                <td>{{ c.size }}</td>
+                <td>{% if c.is_new %}<span class="badge tone-success">New · stock 0</span>{% else %}<span class="badge tone-outline">Exists — skipped</span>{% endif %}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% else %}
+      <div class="card"><div class="card-body text-muted">Select sizes and colors, then preview the combinations before creating them.</div></div>
+      {% endif %}
+    </div>
+  </div>
+</form>
+{% endblock %}

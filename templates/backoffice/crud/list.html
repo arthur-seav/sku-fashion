@@ -1,0 +1,39 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}{{ vs_title_plural }}{% endblock %}
+{% block breadcrumb %}{% if vs.section %}<li>{{ vs.section }}</li>{% endif %}<li>{{ vs_title_plural }}</li>{% endblock %}
+{% block page_title %}{{ vs_title_plural }}{% endblock %}
+{% block page_subtitle %}{% if vs.description %}<p class="bo-page-sub">{{ vs.description }}</p>{% endif %}{% endblock %}
+{% block page_actions %}<a class="btn btn-primary" href="{{ create_url }}">{% icon "plus" %} New {{ vs_title|lower }}</a>{% endblock %}
+{% block content %}
+{% if vs.search_fields %}
+<form class="filter-bar mb-3" method="get">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Search {{ vs_title_plural|lower }}">
+  <button class="btn btn-outline-secondary" type="submit">{% icon "search" %} Search</button>
+  {% if request.GET.q %}<a class="btn btn-ghost" href="{{ list_url }}">Clear</a>{% endif %}
+</form>
+{% endif %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr>{% for c in columns %}<th>{{ c }}</th>{% endfor %}<th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            {% for cell in row.cells %}
+              <td>{% if forloop.first %}<a class="fw-medium text-decoration-none" href="{{ row.url }}">{{ cell }}</a>{% else %}{{ cell }}{% endif %}</td>
+            {% endfor %}
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-ghost btn-icon" href="{{ row.edit_url }}" title="Edit">{% icon "pencil" %}</a>
+              <a class="btn btn-sm btn-ghost btn-icon text-danger" href="{{ row.delete_url }}" title="Delete">{% icon "trash-2" %}</a>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="{{ columns|length|add:1 }}" class="text-center text-muted py-4">No {{ vs_title_plural|lower }} yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "backoffice/partials/pagination.html" %}
+</div>
+{% endblock %}
