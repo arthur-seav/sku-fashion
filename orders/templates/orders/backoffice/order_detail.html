@@ -1,0 +1,165 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}{{ order.order_no }}{% endblock %}
+{% block breadcrumb %}<li>Sales</li><li><a href="{% url 'orders_bo:order_list' %}">Orders</a></li><li>{{ order.order_no }}</li>{% endblock %}
+{% block page_title %}{{ order.order_no }} <span class="badge {{ order.status|tone }} align-middle fs-6">{{ order.get_status_display }}</span>{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Placed {{ order.placed_at|date:"d M Y, H:i" }} by {{ order.user.full_name }} ({{ order.user.email }})</p>{% endblock %}
+{% block page_actions %}
+  {% for s in next_statuses %}
+    <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'transition' %}">
+      {% csrf_token %}<input type="hidden" name="to" value="{{ s.value }}">
+      <button class="btn btn-primary" type="submit">{% icon "chevron-right" %} Mark {{ s.label }}</button>
+    </form>
+  {% endfor %}
+  {% if order.is_cancellable %}
+    <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'cancel' %}" onsubmit="return confirm('Cancel {{ order.order_no }}? Stock will be restored.')">
+      {% csrf_token %}<button class="btn btn-danger" type="submit">{% icon "circle-x" %} Cancel order</button>
+    </form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-8">
+    <div class="card mb-4">
+      <div class="card-header">Items</div>
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>Item</th><th class="text-end">List price</th><th class="text-end">Charged</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
+          <tbody>
+          {% for item in order.items.all %}
+            <tr>
+              <td>{{ item.product_name }}<div class="text-muted small">{{ item.variant_spec }}{% if item.campaign %} · <span class="text-danger">{{ item.campaign.name }}</span>{% endif %}</div></td>
+              <td class="text-end text-muted">{{ item.original_price|money }}</td>
+              <td class="text-end">{{ item.unit_price|money }}</td>
+              <td class="text-end">{{ item.quantity }}</td>
+              <td class="text-end fw-medium">{{ item.line_total|money }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="card-body border-top">
+        <dl class="dl-grid ms-auto" style="grid-template-columns: 1fr auto; max-width: 22rem">
+          <dt>Subtotal</dt><dd class="text-end">{{ order.subtotal|money }}</dd>
+          <dt>Discounts{% if redemption %} (coupon {{ redemption.coupon.code }} −{{ redemption.discount_amount|money }}{% if redemption.released_at %}, released{% endif %}){% endif %}</dt><dd class="text-end">−{{ order.discount_total|money }}</dd>
+          <dt>Shipping · {{ order.shipping_method.name }}</dt><dd class="text-end">{{ order.shipping_fee|money }}</dd>
+          <dt>VAT</dt><dd class="text-end">{{ order.tax_total|money }}</dd>
+          <dt class="fw-semibold text-body">Grand total</dt><dd class="text-end fw-semibold fs-5">{{ order.grand_total|money }}</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header">Payments</div>
+      <div class="card-body">
+        {% for p in order.payments.all %}
+          <div class="{% if not forloop.last %}border-bottom pb-3 mb-3{% endif %}">
+            <div class="d-flex justify-content-between align-items-center">
+              <div><strong>{{ p.provider_label }}</strong> · {{ p.amount|money }} <span class="badge {{ p.status|tone }} ms-1">{{ p.get_status_display }}</span></div>
+              <div class="text-muted small">{% if p.paid_at %}Paid {{ p.paid_at|date:"d M Y H:i" }}{% endif %}{% if p.verified_by %} · verified by {{ p.verified_by.full_name }}{% endif %}{% if p.transaction_ref %} · ref {{ p.transaction_ref }}{% endif %}</div>
+            </div>
+            {% if p.receipt_image %}
+              <div class="row g-3 mt-1 align-items-start">
+                <div class="col-4"><a href="{{ p.receipt_image.url }}" target="_blank"><img src="{{ p.receipt_image.url }}" class="w-100 rounded border" style="max-height: 14rem; object-fit: cover" alt="Receipt"></a></div>
+                {% if p.status == "PENDING" %}
+                <div class="col-8">
+                  <p class="small mb-2">Check the receipt against the expected amount <strong>{{ p.amount|money }}</strong> and reference <code>{{ order.order_no }}</code>.</p>
+                  <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'reconcile' %}">
+                    {% csrf_token %}<input type="hidden" name="payment" value="{{ p.pk }}">
+                    {% include "partials/form_fields.html" with form=reconcile_form %}
+                    <button class="btn btn-success" type="submit">{% icon "circle-check" %} Mark payment received</button>
+                  </form>
+                </div>
+                {% endif %}
+              </div>
+            {% elif p.provider == "BANK_TRANSFER" and p.status == "PENDING" %}
+              <p class="text-muted small mt-2 mb-0">Waiting for the customer to upload a receipt. Unpaid bank-transfer orders are cancelled automatically after 24 hours.</p>
+            {% elif p.provider == "COD" and p.status == "PENDING" %}
+              <p class="text-muted small mt-2 mb-0">Collected on delivery — marked paid when the order is completed.</p>
+            {% endif %}
+
+            {% if p.refunds.all %}
+              <table class="table table-sm mt-3">
+                <thead><tr><th>Refund</th><th>Reason</th><th>By</th><th>When</th></tr></thead>
+                <tbody>{% for r in p.refunds.all %}<tr><td>{{ r.amount|money }}</td><td>{{ r.reason }}</td><td>{{ r.user.full_name }}</td><td class="text-muted">{{ r.created_at|date:"d M Y H:i" }}</td></tr>{% endfor %}</tbody>
+              </table>
+            {% endif %}
+            {% if p.status == "PAID" and p.refundable_amount > 0 %}
+              <details class="mt-2">
+                <summary class="small">Record a refund (up to {{ p.refundable_amount|money }})</summary>
+                <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'refund' %}" class="mt-2" style="max-width: 24rem">
+                  {% csrf_token %}<input type="hidden" name="payment" value="{{ p.pk }}">
+                  {% include "partials/form_fields.html" with form=refund_form %}
+                  <button class="btn btn-outline-secondary btn-sm" type="submit">{% icon "undo-2" %} Record refund</button>
+                </form>
+              </details>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Status history</div>
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead><tr><th>When</th><th>From</th><th>To</th><th>By</th><th>Note</th></tr></thead>
+          <tbody>
+          {% for h in order.history.all %}
+            <tr>
+              <td class="text-muted text-nowrap">{{ h.created_at|date:"d M Y H:i:s" }}</td>
+              <td>{% if h.from_status %}<span class="badge {{ h.from_status|tone }}">{{ h.get_from_status_display }}</span>{% else %}—{% endif %}</td>
+              <td><span class="badge {{ h.to_status|tone }}">{{ h.get_to_status_display }}</span></td>
+              <td>{{ h.user.full_name|default:"System" }}</td>
+              <td class="text-muted">{{ h.note }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-4">
+    <div class="card mb-4">
+      <div class="card-header">Delivery</div>
+      <div class="card-body">
+        <div class="fw-medium">{{ order.ship_recipient }}</div>
+        <div class="text-muted">{{ order.ship_phone }}</div>
+        <div class="mt-2">{{ order.ship_line_1 }}<br>{{ order.ship_district }}, {{ order.ship_province }}</div>
+        <div class="mt-2 small text-muted">Method: {{ order.shipping_method.name }}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Shipment</div>
+      <div class="card-body">
+        {% if shipment %}
+          <dl class="dl-grid">
+            <dt>Carrier</dt><dd>{{ shipment.carrier }}</dd>
+            <dt>Tracking</dt><dd><code>{{ shipment.tracking_no }}</code></dd>
+            <dt>Status</dt><dd><span class="badge {{ shipment.status|tone }}">{{ shipment.get_status_display }}</span></dd>
+            <dt>Shipped</dt><dd>{{ shipment.shipped_at|date:"d M Y H:i" }}</dd>
+            {% if shipment.delivered_at %}<dt>Delivered</dt><dd>{{ shipment.delivered_at|date:"d M Y H:i" }}</dd>{% endif %}
+          </dl>
+          {% if shipment.status == "SHIPPED" %}
+            <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'delivered' %}" class="mt-3">
+              {% csrf_token %}<button class="btn btn-outline-secondary btn-sm" type="submit">{% icon "circle-check" %} Mark delivered</button>
+            </form>
+          {% endif %}
+        {% elif order.status == "PREPARING" %}
+          <p class="small text-muted">Creating the shipment moves the order to <strong>Shipped</strong>.</p>
+          <form method="post" action="{% url 'orders_bo:order_action' order.order_no 'ship' %}">
+            {% csrf_token %}
+            {% include "partials/form_fields.html" with form=shipment_form %}
+            <datalist id="carriers">{% for c in carriers %}<option value="{{ c }}">{% endfor %}</datalist>
+            <button class="btn btn-primary w-100" type="submit">{% icon "truck" %} Create shipment</button>
+          </form>
+        {% else %}
+          <p class="text-muted small mb-0">A shipment can be created once the order is <strong>Preparing</strong>.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

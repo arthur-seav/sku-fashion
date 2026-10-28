@@ -1,0 +1,46 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Orders{% endblock %}
+{% block breadcrumb %}<li>Sales</li><li>Orders</li>{% endblock %}
+{% block page_title %}Orders{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Filter by status, date and customer; open an order to move it through the workflow.</p>{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  <li class="nav-item"><a class="nav-link {% if not request.GET.status and not request.GET.awaiting %}active{% endif %}" href="?">All <span class="badge tone-outline ms-1">{{ total_count }}</span></a></li>
+  <li class="nav-item"><a class="nav-link {% if request.GET.awaiting %}active{% endif %}" href="?awaiting=1">Awaiting action</a></li>
+  {% for value, label, n in status_tabs %}
+    <li class="nav-item"><a class="nav-link {% if request.GET.status == value %}active{% endif %}" href="?status={{ value }}">{{ label }} <span class="badge {{ value|tone }} ms-1">{{ n }}</span></a></li>
+  {% endfor %}
+</ul>
+<form class="filter-bar mb-3" method="get">
+  {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Order no., customer, phone" style="min-width: 16rem">
+  <input class="form-control" type="date" name="start" value="{{ request.GET.start }}" title="Placed from">
+  <input class="form-control" type="date" name="end" value="{{ request.GET.end }}" title="Placed to">
+  <button class="btn btn-outline-secondary" type="submit">{% icon "funnel" %} Filter</button>
+  {% if request.GET %}<a class="btn btn-ghost" href="?">Clear</a>{% endif %}
+</form>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>Order</th><th>Customer</th><th>Placed</th><th class="text-end">Items</th><th class="text-end">Total</th><th>Payment</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for o in orders %}
+        <tr>
+          <td><a class="fw-medium text-decoration-none" href="{% url 'orders_bo:order_detail' o.order_no %}">{{ o.order_no }}</a></td>
+          <td><div>{{ o.user.full_name }}</div><div class="text-muted small">{{ o.user.email }}</div></td>
+          <td class="text-muted text-nowrap">{{ o.placed_at|date:"d M Y H:i" }}</td>
+          <td class="text-end">{{ o.item_count }}</td>
+          <td class="text-end fw-medium">{{ o.grand_total|money }}</td>
+          <td>{% with p=o.payment %}{% if p %}<span class="small">{{ p.provider_label }}</span> <span class="badge {{ p.status|tone }}">{{ p.get_status_display }}</span>{% if p.receipt_image and p.status == "PENDING" %} <span class="badge tone-info">Receipt</span>{% endif %}{% endif %}{% endwith %}</td>
+          <td><span class="badge {{ o.status|tone }}">{{ o.get_status_display }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-center text-muted py-4">No orders match.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "backoffice/partials/pagination.html" %}
+</div>
+{% endblock %}

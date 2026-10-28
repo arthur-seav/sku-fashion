@@ -39,3 +39,22 @@ class ShippingRate(models.Model):
 
     def __str__(self):
         return f"{self.method} → {self.province}"
+
+
+class Shipment(models.Model):
+    """Carrier hand-over for an order (FR-S07). Creating it moves the order to Shipped."""
+
+    class Status(models.TextChoices):
+        SHIPPED = "SHIPPED", "Shipped"
+        DELIVERED = "DELIVERED", "Delivered"
+
+    order = models.OneToOneField("orders.Order", on_delete=models.CASCADE, related_name="shipment")
+    carrier = models.CharField(max_length=100)
+    tracking_no = models.CharField(max_length=100)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.SHIPPED)
+    shipped_at = models.DateTimeField(null=True, blank=True)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.carrier} {self.tracking_no}"

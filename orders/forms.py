@@ -33,3 +33,14 @@ class CheckoutForm(BootstrapFormMixin, forms.Form):
         if address is None:
             return {}
         return {name: getattr(address, name) for name in CheckoutForm.ADDRESS_FIELDS}
+
+
+class ReceiptForm(BootstrapFormMixin, forms.Form):
+    receipt = forms.ImageField(help_text="Photo or screenshot of the transfer, up to 5 MB.")
+
+    def clean_receipt(self):
+        from core.validators import validate_image_size
+
+        image = self.cleaned_data["receipt"]
+        validate_image_size(image)
+        return image

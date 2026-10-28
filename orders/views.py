@@ -130,4 +130,51 @@ class OrderDetailView(CustomerOrderMixin, DetailView):
         ctx["instructions"] = ctx["provider"].instructions(payment) if payment else ""
         ctx["just_placed"] = self.request.GET.get("placed") == "1"
         ctx["coupon_redemption"] = getattr(order, "coupon_redemption", None)
+        ctx["shipment"] = getattr(order, "shipment", None)
+        from .forms import ReceiptForm
+        ctx["receipt_form"] = ReceiptForm()
         return ctx
+
+
+class CancelOrderView(CustomerOrderMixin, DetailView):
+    """UC-10 for the customer: confirm page (GET), then cancel (POST)."""
+
+    template_name = "orders/order_cancel.html"
+    context_object_name = "order"
+    slug_field = "order_no"
+    slug_url_kwarg = "order_no"
+
+    def post(self, request, order_no):
+        from .workflow import InvalidTransition, OrderWorkflow
+
+        order = self.get_object()
+        try:
+            OrderWorkflow(order, request.user).cancel("Cancelled by customer")
+        except InvalidTransition as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, f"Order {order.order_no} has been cancelled.")
+        return redirect("orders:order_detail", order_no=order.order_no)
+
+
+class UploadReceiptView(CustomerOrderMixin, View):
+    """UC-08: attach a bank-transfer receipt for staff reconciliation."""
+
+    def post(self, request, order_no):
+        from payments.services import PaymentError, PaymentService
+
+        from .forms import ReceiptForm
+
+        order = get_object_or_404(self.get_queryset(), order_no=order_no)
+        form = ReceiptForm(request.POST, request.FILES)
+        if not form.is_valid():
+            for errors in form.errors.values():
+                for error in errors:
+                    messages.error(request, error)
+        else:
+            try:
+                PaymentService(request.user).upload_receipt(order.payment, form.cleaned_data["receipt"])
+                messages.success(request, "Receipt uploaded. We will confirm your payment shortly.")
+            except PaymentError as exc:
+                messages.error(request, str(exc))
+        return redirect("orders:order_detail", order_no=order.order_no)

@@ -38,3 +38,27 @@ class Payment(models.Model):
     @property
     def provider_label(self):
         return self.provider_obj.label
+
+    @property
+    def refunded_total(self):
+        return sum((r.amount for r in self.refunds.all()), 0)
+
+    @property
+    def refundable_amount(self):
+        return self.amount - self.refunded_total if self.status == self.Status.PAID else 0
+
+
+class Refund(models.Model):
+    """Money returned against a paid payment (FR-S06)."""
+
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="refunds")
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    reason = models.CharField(max_length=255)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="refunds_issued")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Refund {self.amount} on {self.payment.order}"
