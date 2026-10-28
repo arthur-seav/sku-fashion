@@ -103,3 +103,28 @@ class Coupon(DiscountRule):
     def save(self, *args, **kwargs):
         self.code = self.code.strip().upper()
         super().save(*args, **kwargs)
+
+    def active_redemptions(self):
+        """Redemptions that still count against the limits (not released)."""
+        return self.redemptions.filter(released_at__isnull=True)
+
+    @property
+    def used_count(self):
+        return self.active_redemptions().count()
+
+
+class CouponRedemption(models.Model):
+    """Records each use of a coupon with its order and amount (FR-X10).
+    Cancelling the order releases it, so it no longer counts (UC-10)."""
+
+    coupon = models.ForeignKey(Coupon, on_delete=models.PROTECT, related_name="redemptions")
+    order = models.OneToOneField("orders.Order", on_delete=models.CASCADE, related_name="coupon_redemption")
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    released_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.coupon} on {self.order}"

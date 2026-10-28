@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Checkout · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Checkout</h1>
+<form method="post" id="checkout-form" novalidate>
+  {% csrf_token %}
+  <div class="row g-4">
+    <div class="col-7">
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span>1. Delivery details</span>
+          {% if addresses %}
+          <select class="form-select form-select-sm" id="saved-address" style="width: auto">
+            <option value="">Fill from saved address…</option>
+            {% for a in addresses %}
+              <option data-recipient="{{ a.recipient }}" data-phone="{{ a.phone }}" data-province="{{ a.province }}" data-district="{{ a.district }}" data-line_1="{{ a.line_1 }}">{{ a.recipient }} — {{ a.district }}, {{ a.province }}{% if a.is_default %} (default){% endif %}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-6">{% include "orders/partials/field.html" with field=form.recipient %}</div>
+            <div class="col-6">{% include "orders/partials/field.html" with field=form.phone %}</div>
+            <div class="col-6">{% include "orders/partials/field.html" with field=form.province %}</div>
+            <div class="col-6">{% include "orders/partials/field.html" with field=form.district %}</div>
+            <div class="col-12">{% include "orders/partials/field.html" with field=form.line_1 %}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">2. Shipping method</div>
+        <div class="card-body">
+          {% for choice in form.shipping_method %}
+            <div class="form-check mb-2">
+              {{ choice.tag }}
+              <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+            </div>
+          {% empty %}<p class="text-muted mb-0">No shipping methods are available.</p>{% endfor %}
+          {% for e in form.shipping_method.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          {% if totals.shipping_reason == "free threshold" %}<div class="badge tone-success mt-1">Free shipping — your order reached the threshold</div>{% endif %}
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header">3. Payment method</div>
+        <div class="card-body">
+          {% for choice in form.payment_method %}
+            <div class="form-check mb-2">
+              {{ choice.tag }}
+              <label class="form-check-label" for="{{ choice.id_for_label }}">
+                {{ choice.choice_label }}
+                {% for p in providers %}{% if p.code == choice.data.value %}<div class="text-muted small">{{ p.description }}</div>{% endif %}{% endfor %}
+              </label>
+            </div>
+          {% endfor %}
+          <div id="bank-details" class="alert alert-info small mt-3 mb-0 {% if form.payment_method.value != 'BANK_TRANSFER' %}d-none{% endif %}">
+            <strong>Bank transfer details</strong><br>
+            {{ bank.bank }} · Account {{ bank.account_no }} ({{ bank.account_name }})<br>
+            Use your order number as the reference. You can upload the receipt from the order page; unpaid orders are cancelled after 24 hours.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-5">
+      <div class="card position-sticky" style="top: 1rem">
+        <div class="card-header">Order summary</div>
+        <ul class="list-group list-group-flush">
+          {% for line in summary.lines %}
+            <li class="list-group-item d-flex justify-content-between">
+              <span>{{ line.quantity }} × {{ line.variant.product.name }}<br><span class="text-muted small">{{ line.variant.spec }}</span></span>
+              <span class="text-end">{{ line.line_total|money }}{% if line.quote.discount %}<br><span class="price-original small">{{ line.original_total|money }}</span>{% endif %}</span>
+            </li>
+          {% endfor %}
+        </ul>
+        <div class="card-body">
+          <label class="form-label" for="{{ form.coupon_code.id_for_label }}">Coupon code</label>
+          <div class="d-flex gap-2">
+            {{ form.coupon_code }}
+            <button class="btn btn-outline-secondary" type="submit" name="action" value="apply">Apply</button>
+          </div>
+          {% for e in form.coupon_code.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+          {% if coupon %}<div class="text-success small mt-1">{% icon "circle-check" "icon icon-sm" %} {{ coupon.code }} applied — {{ coupon.discount_label }}</div>{% endif %}
+
+          <dl class="dl-grid mt-4" style="grid-template-columns: 1fr auto">
+            <dt>Subtotal</dt><dd class="text-end">{{ totals.subtotal|money }}</dd>
+            {% if totals.campaign_discount %}<dt>Campaign discount</dt><dd class="text-end price-sale">−{{ totals.campaign_discount|money }}</dd>{% endif %}
+            {% if totals.coupon_discount %}<dt>Coupon {{ coupon.code }}</dt><dd class="text-end price-sale">−{{ totals.coupon_discount|money }}</dd>{% endif %}
+            <dt>Shipping</dt><dd class="text-end">{{ totals.shipping_fee|money }}</dd>
+            <dt>VAT ({{ tax_rate|percent }})</dt><dd class="text-end">{{ totals.tax|money }}</dd>
+            <dt class="fw-semibold text-body fs-6">Total</dt><dd class="text-end fw-semibold fs-5">{{ totals.grand_total|money }}</dd>
+          </dl>
+          <button class="btn btn-primary btn-lg w-100 mt-3" type="submit" name="action" value="place">Place order</button>
+          <button class="btn btn-ghost btn-sm w-100 mt-2" type="submit" name="action" value="recalc" id="recalc">Update totals</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+  (function () {
+    var form = document.getElementById("checkout-form");
+    function recalc() { document.getElementById("recalc").click(); }
+    // Shipping fee depends on method and province: refresh totals when they change.
+    form.querySelectorAll("input[name=shipping_method], select[name=province]").forEach(function (el) {
+      el.addEventListener("change", recalc);
+    });
+    form.querySelectorAll("input[name=payment_method]").forEach(function (el) {
+      el.addEventListener("change", function () {
+        document.getElementById("bank-details").classList.toggle("d-none", el.value !== "BANK_TRANSFER" || !el.checked);
+      });
+    });
+    var saved = document.getElementById("saved-address");
+    if (saved) saved.addEventListener("change", function () {
+      var opt = saved.selectedOptions[0];
+      if (!opt.value && !opt.dataset.recipient) return;
+      ["recipient", "phone", "province", "district", "line_1"].forEach(function (name) {
+        form.elements[name].value = opt.dataset[name];
+      });
+      recalc();
+    });
+  })();
+</script>
+{% endblock %}

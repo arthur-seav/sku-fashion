@@ -1,16 +1,16 @@
-"""Coupon validation (FR-C04).
+"""Coupon validation, redemption and release (FR-C04, FR-X10, UC-10).
 
 Each failure has its own message so the customer knows exactly why a code
-was refused. Usage-limit checks and redemption records are added together
-with orders (step 9), because a redemption belongs to an order.
+was refused.
 """
 
+from django.db import transaction
 from django.utils import timezone
 from django.utils.formats import date_format
 
 from core.templatetags.ui import money
 
-from .models import Coupon
+from .models import Coupon, CouponRedemption
 
 
 class CouponError(Exception):
@@ -42,8 +42,27 @@ class CouponService:
         self._check_usage(coupon, user)
         return coupon
 
-    def _check_usage(self, coupon, user):
-        """Usage limits — implemented with coupon redemptions (step 9)."""
+    @staticmethod
+    def _check_usage(coupon, user):
+        if coupon.usage_limit is not None and coupon.used_count >= coupon.usage_limit:
+            raise CouponError(f"Coupon “{coupon.code}” has reached its usage limit.")
+        if coupon.per_user_limit is not None and user is not None and user.is_authenticated:
+            used_by_user = coupon.active_redemptions().filter(order__user=user).count()
+            if used_by_user >= coupon.per_user_limit:
+                raise CouponError(f"You have already used coupon “{coupon.code}” "
+                                  f"{used_by_user} time(s), the maximum allowed.")
+
+    @transaction.atomic
+    def redeem(self, coupon, order, amount):
+        """Called inside the checkout transaction. The coupon row is locked so
+        two simultaneous checkouts cannot both take the last allowed use."""
+        coupon = Coupon.objects.select_for_update().get(pk=coupon.pk)
+        self._check_usage(coupon, order.user)
+        return CouponRedemption.objects.create(coupon=coupon, order=order, discount_amount=amount)
+
+    def release(self, order):
+        """UC-10: a cancelled order gives its coupon use back."""
+        return CouponRedemption.objects.filter(order=order, released_at__isnull=True).update(released_at=self.now)
 
     @staticmethod
     def discount(coupon, amount):

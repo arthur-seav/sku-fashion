@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     "cart",
     "promotions",
     "shipping",
+    "orders",
+    "payments",
     "reporting",
 ]
 
@@ -153,4 +155,12 @@ DEFAULT_FROM_EMAIL = "SKU-Fashion <no-reply@sku-fashion.local>"
 # --------------------------------------------------------------------------
 STORE_NAME = "SKU-Fashion"
 STORE_CURRENCY = os.getenv("STORE_CURRENCY", "USD")
-STORE_TAX_RATE = Decimal(os.getenv("STORE_TAX_RATE", "0.10"))
+STORE_TAX_RATE = Decimal(os.getenv("STORE_TAX_RATE", "0.10"))  # VAT on the discounted subtotal
+
+# Bank-transfer details shown to customers (demo values; set real ones in .env)
+STORE_BANK_NAME = os.getenv("STORE_BANK_NAME", "ABA Bank")
+STORE_BANK_ACCOUNT_NAME = os.getenv("STORE_BANK_ACCOUNT_NAME", "SKU-Fashion Co., Ltd.")
+STORE_BANK_ACCOUNT_NO = os.getenv("STORE_BANK_ACCOUNT_NO", "000 123 456")
+
+# Unpaid bank-transfer orders are cancelled after this many hours (FR-X09)
+UNPAID_ORDER_TIMEOUT_HOURS = int(os.getenv("UNPAID_ORDER_TIMEOUT_HOURS", "24"))

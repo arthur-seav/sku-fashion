@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Order {{ order.order_no }} · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="orders" %}</div>
+  <div class="col-9">
+    {% if just_placed %}
+      <div class="card mb-4" style="box-shadow: 0 0 0 1px var(--tone-success)">
+        <div class="card-body">
+          <h2 class="h5 mb-1">{% icon "circle-check" %} Order placed — {{ order.order_no }}</h2>
+          <p class="mb-0">{{ instructions }}</p>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+      <div>
+        <h1 class="h4 mb-1">Order {{ order.order_no }}</h1>
+        <div class="text-muted">Placed {{ order.placed_at|date:"d M Y, H:i" }}</div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge {{ order.status|tone }} fs-6">{{ order.get_status_display }}</span>
+        {% block order_actions %}{% include "orders/partials/customer_actions.html" %}{% endblock %}
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-8">
+        <div class="card mb-4">
+          <div class="card-header">Items</div>
+          <div class="table-responsive">
+            <table class="table">
+              <thead><tr><th>Item</th><th class="text-end">Unit price</th><th class="text-end">Qty</th><th class="text-end">Total</th></tr></thead>
+              <tbody>
+              {% for item in order.items.all %}
+                <tr>
+                  <td>{{ item.product_name }}<div class="text-muted small">{{ item.variant_spec }}</div></td>
+                  <td class="text-end">{% if item.unit_price != item.original_price %}<span class="price-original">{{ item.original_price|money }}</span> {% endif %}{{ item.unit_price|money }}</td>
+                  <td class="text-end">{{ item.quantity }}</td>
+                  <td class="text-end">{{ item.line_total|money }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <div class="card-body border-top">
+            <dl class="dl-grid ms-auto" style="grid-template-columns: 1fr auto; max-width: 20rem">
+              <dt>Subtotal</dt><dd class="text-end">{{ order.subtotal|money }}</dd>
+              <dt>Discount{% if coupon_redemption %} (incl. {{ coupon_redemption.coupon.code }}){% endif %}</dt><dd class="text-end">−{{ order.discount_total|money }}</dd>
+              <dt>Shipping · {{ order.shipping_method.name }}</dt><dd class="text-end">{{ order.shipping_fee|money }}</dd>
+              <dt>VAT</dt><dd class="text-end">{{ order.tax_total|money }}</dd>
+              <dt class="fw-semibold text-body">Total</dt><dd class="text-end fw-semibold fs-5">{{ order.grand_total|money }}</dd>
+            </dl>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Status history</div>
+          <ul class="list-group list-group-flush">
+            {% for h in order.history.all %}
+              <li class="list-group-item d-flex justify-content-between">
+                <span><span class="badge {{ h.to_status|tone }}">{{ h.get_to_status_display }}</span> <span class="text-muted small ms-2">{{ h.note }}</span></span>
+                <span class="text-muted small">{{ h.created_at|date:"d M Y H:i" }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-4">
+        <div class="card mb-4">
+          <div class="card-header">Delivery</div>
+          <div class="card-body">
+            <div class="fw-medium">{{ order.ship_recipient }}</div>
+            <div class="text-muted">{{ order.ship_phone }}</div>
+            <div class="mt-2">{{ order.ship_line_1 }}<br>{{ order.ship_district }}, {{ order.ship_province }}</div>
+            {% block shipment_info %}{% include "orders/partials/shipment_info.html" %}{% endblock %}
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">Payment</div>
+          <div class="card-body">
+            {% if payment %}
+              <div class="d-flex justify-content-between"><span>{{ provider.label }}</span><span class="badge {{ payment.status|tone }}">{{ payment.get_status_display }}</span></div>
+              <div class="text-muted small mt-2">{{ instructions }}</div>
+              {% block payment_extra %}{% include "orders/partials/payment_extra.html" %}{% endblock %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
