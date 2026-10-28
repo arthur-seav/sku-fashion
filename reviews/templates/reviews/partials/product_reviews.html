@@ -1,0 +1,39 @@
+{% load reviews %}
+<section class="mt-5" id="reviews">
+  <h2 class="h4 mb-3">Customer reviews</h2>
+  {% if review_summary.count %}
+    <div class="row g-5">
+      <div class="col-4">
+        <div class="d-flex align-items-baseline gap-2">
+          <span class="display-6 fw-semibold">{{ review_summary.average }}</span>
+          <span class="text-muted">out of 5</span>
+        </div>
+        <div class="fs-5">{% stars review_summary.average %}</div>
+        <div class="text-muted small mb-3">{{ review_summary.count }} review{{ review_summary.count|pluralize }} from verified buyers</div>
+        {% for star_count, n, pct in review_summary.distribution %}
+          <div class="d-flex align-items-center gap-2 small mb-1">
+            <span class="text-nowrap" style="width: 3.5rem">{{ star_count }} star{{ star_count|pluralize }}</span>
+            <div class="progress flex-grow-1" style="height: .5rem" role="progressbar" aria-label="{{ star_count }} stars" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100">
+              <div class="progress-bar rating-bar" style="width: {{ pct }}%"></div>
+            </div>
+            <span class="text-muted text-end" style="width: 1.5rem">{{ n }}</span>
+          </div>
+        {% endfor %}
+      </div>
+      <div class="col-8">
+        {% for review in reviews %}
+          <article class="pb-3 mb-3 {% if not forloop.last %}border-bottom{% endif %}">
+            <div class="d-flex justify-content-between">
+              <div>{% stars review.rating %}</div>
+              <span class="text-muted small">{{ review.submitted_at|date:"d M Y" }}</span>
+            </div>
+            <div class="small mt-1"><span class="fw-medium">{{ review.author_name }}</span> <span class="text-muted">· Verified purchase · {{ review.order_item.variant.color.name }} / {{ review.order_item.variant.size.name }}</span></div>
+            {% if review.comment %}<p class="mb-0 mt-2" style="white-space: pre-line">{{ review.comment }}</p>{% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </div>
+  {% else %}
+    <p class="text-muted">No reviews yet. Customers who buy this item can review it once their order is completed.</p>
+  {% endif %}
+</section>

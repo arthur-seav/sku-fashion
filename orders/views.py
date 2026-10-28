@@ -119,7 +119,7 @@ class OrderDetailView(CustomerOrderMixin, DetailView):
 
     def get_queryset(self):
         return super().get_queryset().select_related("shipping_method").prefetch_related(
-            "items", "payments", "history")
+            "items__review", "payments", "history")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)

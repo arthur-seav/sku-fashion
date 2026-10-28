@@ -39,6 +39,8 @@ BACKOFFICE_NAV = [
     ]),
     NavGroup("Catalog", [
         NavItem("Products", "catalog_bo:product_list", "shirt", ("catalog_bo:product_", "catalog_bo:variant_")),
+        NavItem("Reviews", "reviews_bo:review_list", "message-square-text", ("reviews_bo:",),
+                badge="reviews_pending"),
         NavItem("Categories", "catalog_bo:category_list", "list-tree", ("catalog_bo:category_",)),
         NavItem("Brands", "catalog_bo:brand_list", "award", ("catalog_bo:brand_",)),
         NavItem("Materials", "catalog_bo:material_list", "layers", ("catalog_bo:material_",)),

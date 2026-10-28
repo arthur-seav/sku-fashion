@@ -34,13 +34,22 @@ class NavigationTests(TestCase):
         from django.test import override_settings
         from django.utils import timezone
 
-        from orders.models import Order, OrderStatusHistory
+        from django.db import models
+
+        from orders.models import Order, OrderItem, OrderStatusHistory
 
         with override_settings(MEDIA_ROOT="/home/hermes/.hermes/cache/scratch/sku-media-test"):
             call_command("seed_demo", stdout=StringIO())
             self.assertGreater(Order.objects.count(), 20)
             self.assertTrue(Order.objects.filter(status="PENDING_PAYMENT", payments__receipt_image__gt="").exists())
             self.assertFalse(OrderStatusHistory.objects.filter(created_at__gt=timezone.now()).exists())
+            from reviews.models import Review
+            statuses = set(Review.objects.values_list("status", flat=True))
+            self.assertEqual(statuses, {"PENDING", "APPROVED", "REJECTED"})
+            self.assertFalse(Review.objects.filter(submitted_at__gt=timezone.now()).exists())
+            self.assertFalse(Review.objects.filter(moderated_at__lt=models.F("submitted_at")).exists())
+            dara_items = OrderItem.objects.filter(order__user__email="dara@example.com", order__status="COMPLETED")
+            self.assertTrue(dara_items.filter(review__isnull=True).exists())  # left for the live demo
             with self.assertRaises(CommandError):
                 call_command("seed_demo", stdout=StringIO())
 

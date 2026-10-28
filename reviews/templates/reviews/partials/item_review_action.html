@@ -1,0 +1,11 @@
+{% load ui %}{% with review=item.review %}<div class="mt-1 small">
+  {% if not review %}
+    <a class="text-decoration-none" href="{% url 'reviews:write' item.pk %}">{% icon "star" %} Write a review</a>
+  {% elif review.status == "APPROVED" %}
+    <span class="badge tone-success">Review published</span>
+  {% elif review.status == "PENDING" %}
+    <span class="badge tone-warning">Review awaiting check</span> <a class="text-decoration-none ms-1" href="{% url 'reviews:write' item.pk %}">Edit</a>
+  {% else %}
+    <span class="badge tone-danger">Review not published</span> <a class="text-decoration-none ms-1" href="{% url 'reviews:write' item.pk %}">See why &amp; edit</a>
+  {% endif %}
+</div>{% endwith %}

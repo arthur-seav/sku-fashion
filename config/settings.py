@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "orders",
     "payments",
     "reporting",
+    "reviews",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

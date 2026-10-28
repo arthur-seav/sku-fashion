@@ -35,7 +35,9 @@
               <tbody>
               {% for item in order.items.all %}
                 <tr>
-                  <td>{{ item.product_name }}<div class="text-muted small">{{ item.variant_spec }}</div></td>
+                  <td>{{ item.product_name }}<div class="text-muted small">{{ item.variant_spec }}</div>
+                    {% if order.status == "COMPLETED" %}{% include "reviews/partials/item_review_action.html" %}{% endif %}
+                  </td>
                   <td class="text-end">{% if item.unit_price != item.original_price %}<span class="price-original">{{ item.original_price|money }}</span> {% endif %}{{ item.unit_price|money }}</td>
                   <td class="text-end">{{ item.quantity }}</td>
                   <td class="text-end">{{ item.line_total|money }}</td>
