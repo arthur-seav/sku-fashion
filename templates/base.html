@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ STORE_NAME }}{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% block navbar %}{% include "partials/storefront_nav.html" %}{% endblock %}
+
+  <main class="{% block main_class %}container py-4{% endblock %}">
+    {% include "partials/messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block footer %}
+  <footer class="border-top py-3 mt-5 text-center text-muted small">
+    &copy; {% now "Y" %} {{ STORE_NAME }} &middot; SV34 Advanced Python Programming
+  </footer>
+  {% endblock %}
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

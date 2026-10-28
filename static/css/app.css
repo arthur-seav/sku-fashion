@@ -1,0 +1,22 @@
+/* SKU-Fashion — small overrides on top of Bootstrap 5 (desktop target, NFR-04) */
+body { min-width: 1280px; }
+
+.product-card img, .product-thumb {
+  object-fit: cover;
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  background: #f1f3f5;
+}
+.product-thumb-sm { width: 48px; height: 64px; object-fit: cover; background: #f1f3f5; }
+.price-original { text-decoration: line-through; color: #6c757d; font-size: .9em; }
+.color-swatch {
+  display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+  border: 1px solid #adb5bd; vertical-align: middle;
+}
+
+/* Back-office layout */
+.bo-sidebar { width: 240px; min-height: 100vh; }
+.bo-sidebar .nav-link { color: #ced4da; padding: .35rem 1rem; }
+.bo-sidebar .nav-link:hover, .bo-sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,.08); }
+.bo-sidebar .nav-heading { color: #6c757d; font-size: .75rem; text-transform: uppercase; padding: .75rem 1rem .25rem; }
+.table td, .table th { vertical-align: middle; }
