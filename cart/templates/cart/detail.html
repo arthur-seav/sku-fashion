@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% load ui %}
+{% block title %}Cart · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Shopping cart</h1>
+{% if summary.is_empty %}
+  <div class="card"><div class="card-body text-center py-5">
+    <p class="text-muted mb-3">Your cart is empty.</p>
+    <a class="btn btn-primary" href="{% url 'catalog:product_list' %}">Continue shopping</a>
+  </div></div>
+{% else %}
+<div class="row g-4">
+  <div class="col-8">
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table">
+          <thead><tr><th>Item</th><th class="text-end">Price</th><th style="width: 11rem">Quantity</th><th class="text-end">Total</th><th></th></tr></thead>
+          <tbody>
+          {% for line in summary.lines %}
+            {% with v=line.variant %}
+            <tr class="{% if line.issue %}table-warning{% endif %}">
+              <td>
+                <div class="d-flex gap-3 align-items-center">
+                  {% with image=v.product.primary_image %}{% if image %}<img class="product-thumb-sm" src="{{ image.image.url }}" alt="">{% else %}<span class="product-thumb-sm d-inline-block"></span>{% endif %}{% endwith %}
+                  <div>
+                    <a class="fw-medium text-decoration-none" href="{% url 'catalog:product_detail' v.product.slug %}">{{ v.product.name }}</a>
+                    <div class="text-muted small"><span class="color-swatch me-1" style="background:{{ v.color.hex_code }}"></span>{{ v.spec }} · {{ v.sku }}</div>
+                    {% if line.quote.campaign %}<span class="badge tone-danger mt-1">{{ line.quote.campaign.name }}</span>{% endif %}
+                    {% if line.issue %}<div class="text-danger small mt-1">{% icon "triangle-alert" "icon icon-sm" %} {{ line.issue }}</div>{% endif %}
+                  </div>
+                </div>
+              </td>
+              <td class="text-end">
+                {% if line.quote.discount %}<div class="price-original">{{ line.quote.original|money }}</div><div class="price-sale">{{ line.quote.unit|money }}</div>
+                {% else %}{{ line.quote.unit|money }}{% endif %}
+              </td>
+              <td>
+                <form method="post" action="{% url 'cart:update' line.item.pk %}" class="d-flex gap-1">
+                  {% csrf_token %}
+                  <input class="form-control" type="number" name="quantity" value="{{ line.quantity }}" min="0" max="{{ v.stock_qty }}" style="width: 5rem">
+                  <button class="btn btn-outline-secondary btn-icon" type="submit" title="Update">{% icon "refresh-ccw" %}</button>
+                </form>
+              </td>
+              <td class="text-end fw-medium">{{ line.line_total|money }}</td>
+              <td class="text-end">
+                <form method="post" action="{% url 'cart:remove' line.item.pk %}">{% csrf_token %}<button class="btn btn-ghost btn-icon text-danger" type="submit" title="Remove">{% icon "trash-2" %}</button></form>
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <a class="btn btn-ghost mt-3" href="{% url 'catalog:product_list' %}">{% icon "arrow-left" %} Continue shopping</a>
+  </div>
+
+  <div class="col-4">
+    <div class="card">
+      <div class="card-header">Order summary</div>
+      <div class="card-body">
+        <dl class="dl-grid" style="grid-template-columns: 1fr auto">
+          <dt>Subtotal ({{ summary.item_count }} item{{ summary.item_count|pluralize }})</dt><dd class="text-end">{{ summary.subtotal|money }}</dd>
+          <dt>Discount</dt><dd class="text-end {% if summary.discount %}price-sale{% endif %}">{% if summary.discount %}−{{ summary.discount|money }}{% else %}{{ 0|money }}{% endif %}</dd>
+          <dt class="fw-semibold text-body">Total</dt><dd class="text-end fw-semibold fs-5">{{ summary.total|money }}</dd>
+        </dl>
+        <p class="text-muted small mt-2 mb-3">Coupon, shipping and VAT are calculated at checkout.</p>
+        {% if summary.issues %}
+          <div class="alert alert-warning small">Fix the highlighted items before checking out.</div>
+        {% endif %}
+        {% url 'orders:checkout' as checkout_url %}
+        {% if checkout_url %}
+          <a class="btn btn-primary w-100 {% if summary.issues %}disabled{% endif %}" href="{{ checkout_url }}">Proceed to checkout</a>
+          {% if not user.is_authenticated %}<p class="text-muted small text-center mt-2 mb-0">You will be asked to sign in — your cart is kept.</p>{% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

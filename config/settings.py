@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "accounts",
     "catalog",
     "inventory",
+    "cart",
     "reporting",
 ]
 
@@ -76,6 +77,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.store",
+                "cart.context_processors.cart",
             ],
         },
     },

@@ -8,6 +8,7 @@ urlpatterns = [
     # Storefront
     path("", include("core.urls")),
     path("shop/", include("catalog.urls")),
+    path("cart/", include("cart.urls")),
     path("account/", include("accounts.urls")),
     # Back-office (Staff / Admin)
     path("backoffice/", include("reporting.urls")),
