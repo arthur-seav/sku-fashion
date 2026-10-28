@@ -122,6 +122,3 @@ body.bo { min-width: 1280px; background: var(--background); }
 .table-footer { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--muted-foreground); }
 
 .thumb { width: 2.5rem; height: 2.5rem; border-radius: calc(var(--radius) * 0.8); object-fit: cover; background: var(--muted); }
-.dl-grid { display: grid; grid-template-columns: max-content 1fr; gap: 0.5rem 1.5rem; margin: 0; font-size: 0.875rem; }
-.dl-grid dt { color: var(--muted-foreground); font-weight: 400; }
-.dl-grid dd { margin: 0; }

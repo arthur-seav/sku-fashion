@@ -50,7 +50,7 @@
             {% if account.is_active %}<span class="badge tone-success">Active</span>{% else %}<span class="badge tone-danger">Deactivated</span>{% endif %}
             {% if account.is_locked %}<span class="badge tone-warning">Locked</span>{% endif %}
           </td>
-          <td class="text-muted">{{ account.last_login|default:"Never" }}</td>
+          <td class="text-muted">{{ account.last_login|date:"d M Y H:i"|default:"Never" }}</td>
           <td class="text-end">
             <div class="d-inline-flex gap-1">
               <form method="post" action="{% url 'accounts_bo:account_action' account.pk 'reset-password' %}">
