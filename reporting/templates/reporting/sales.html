@@ -1,0 +1,39 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Sales report{% endblock %}
+{% block breadcrumb %}<li>Reports</li><li>Sales</li>{% endblock %}
+{% block page_title %}Sales report{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{{ period.start|date:"j M Y" }} – {{ period.end|date:"j M Y" }} · cancelled orders excluded</p>{% endblock %}
+{% block page_actions %}<a class="btn btn-outline-secondary" href="{% querystring format='csv' %}">{% icon "download" %} Export CSV</a>{% endblock %}
+{% block content %}
+{% include "reporting/partials/period_form.html" with show_group=True %}
+<div class="row g-4 mb-4">
+  <div class="col-3"><div class="metric-tile"><span class="stat-icon">{% icon "dollar-sign" %}</span><div><div class="metric-label">Revenue</div><div class="metric-value">{{ totals.revenue|money }}</div></div></div></div>
+  <div class="col-3"><div class="metric-tile"><span class="stat-icon">{% icon "shopping-bag" %}</span><div><div class="metric-label">Orders</div><div class="metric-value">{{ totals.orders }}</div></div></div></div>
+  <div class="col-3"><div class="metric-tile"><span class="stat-icon">{% icon "package" %}</span><div><div class="metric-label">Items sold</div><div class="metric-value">{{ totals.items }}</div></div></div></div>
+  <div class="col-3"><div class="metric-tile"><span class="stat-icon">{% icon "ticket-percent" %}</span><div><div class="metric-label">Discounts given</div><div class="metric-value">{{ totals.discounts|money }}</div></div></div></div>
+</div>
+<div class="card mb-4"><div class="card-body">
+  <div class="bar-chart">{% for r in rows %}<div class="bar" style="--h: {{ r.pct }}%" title="{{ r.bucket }}: {{ r.revenue|money }}"></div>{% endfor %}</div>
+  {% if rows|length <= 31 %}<div class="bar-labels">{% for r in rows %}<span>{% if group == "month" %}{{ r.bucket|date:"M y" }}{% else %}{{ r.bucket|date:"j" }}{% endif %}</span>{% endfor %}</div>{% endif %}
+</div></div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th>{% if group == "month" %}Month{% else %}Day{% endif %}</th><th class="text-end">Orders</th><th class="text-end">Items</th><th class="text-end">Gross</th><th class="text-end">Discounts</th><th class="text-end">VAT</th><th class="text-end">Shipping</th><th class="text-end">Revenue</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr class="{% if not r.orders %}text-muted{% endif %}">
+          <td>{% if group == "month" %}{{ r.bucket|date:"F Y" }}{% else %}{{ r.bucket|date:"D, j M Y" }}{% endif %}</td>
+          <td class="text-end">{{ r.orders }}</td><td class="text-end">{{ r.items }}</td>
+          <td class="text-end">{{ r.gross|money }}</td><td class="text-end">−{{ r.discounts|money }}</td>
+          <td class="text-end">{{ r.tax|money }}</td><td class="text-end">{{ r.shipping|money }}</td>
+          <td class="text-end fw-medium">{{ r.revenue|money }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr class="fw-semibold"><td>Total</td><td class="text-end">{{ totals.orders }}</td><td class="text-end">{{ totals.items }}</td><td class="text-end">{{ totals.gross|money }}</td><td class="text-end">−{{ totals.discounts|money }}</td><td class="text-end">{{ totals.tax|money }}</td><td class="text-end">{{ totals.shipping|money }}</td><td class="text-end">{{ totals.revenue|money }}</td></tr></tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}

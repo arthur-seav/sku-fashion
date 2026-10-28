@@ -1,0 +1,32 @@
+{% extends "backoffice/base.html" %}
+{% load ui %}
+{% block title %}Best sellers{% endblock %}
+{% block breadcrumb %}<li>Reports</li><li>Best sellers</li>{% endblock %}
+{% block page_title %}Best sellers{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">{{ period.start|date:"j M Y" }} – {{ period.end|date:"j M Y" }} · ranked by units sold</p>{% endblock %}
+{% block content %}
+{% include "reporting/partials/period_form.html" with show_group=False %}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead><tr><th style="width:4rem">#</th><th>Product</th><th class="text-end">Units sold</th><th class="text-end">Orders</th><th class="text-end">Revenue</th><th style="width:30%"></th></tr></thead>
+      <tbody>
+      {% with top=rows.0.qty %}
+      {% for r in rows %}
+        <tr>
+          <td class="fw-semibold">{{ forloop.counter }}</td>
+          <td><a class="text-decoration-none" href="{% url 'catalog_bo:product_detail' r.product_id %}">{{ r.name }}</a></td>
+          <td class="text-end fw-medium">{{ r.qty }}</td>
+          <td class="text-end">{{ r.orders }}</td>
+          <td class="text-end">{{ r.revenue|money }}</td>
+          <td><div class="progress"><div class="progress-bar" style="width: {% widthratio r.qty top 100 %}%"></div></div></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="text-center text-muted py-4">No sales in this period.</td></tr>
+      {% endfor %}
+      {% endwith %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% load ui %}
+<form class="filter-bar mb-3" method="get">
+  <div><label class="form-label small text-muted mb-1">From</label>{{ form.start }}</div>
+  <div><label class="form-label small text-muted mb-1">To</label>{{ form.end }}</div>
+  {% if show_group %}<div><label class="form-label small text-muted mb-1">Group</label>{{ form.group }}</div>{% endif %}
+  <button class="btn btn-outline-secondary" type="submit">{% icon "calendar" %} Apply</button>
+  {% if form.non_field_errors %}<div class="text-danger small w-100">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+</form>
