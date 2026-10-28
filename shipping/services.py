@@ -44,17 +44,19 @@ class ShipmentService:
         from django.db import transaction
         from django.utils import timezone
 
-        from orders.models import OrderStatus
+        from orders.models import Order, OrderStatus
         from orders.workflow import OrderWorkflow
 
         from .models import Shipment
 
-        if order.status != OrderStatus.PREPARING:
-            raise ShipmentError(f"Only orders in Preparing can be shipped (this one is "
-                                f"{order.get_status_display()}).")
         if not carrier.strip() or not tracking_no.strip():
             raise ShipmentError("Carrier and tracking number are both required.")
         with transaction.atomic():
+            # Re-read under a row lock: the caller's instance may be stale.
+            order = Order.objects.select_for_update().get(pk=order.pk)
+            if order.status != OrderStatus.PREPARING:
+                raise ShipmentError(f"Only orders in Preparing can be shipped (this one is "
+                                    f"{order.get_status_display()}).")
             shipment = Shipment.objects.create(order=order, carrier=carrier.strip(), tracking_no=tracking_no.strip(),
                                                shipped_at=timezone.now())
             OrderWorkflow(order, self.user).transition(

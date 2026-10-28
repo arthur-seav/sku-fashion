@@ -27,6 +27,23 @@ class NavigationTests(TestCase):
             for item in group.items:
                 self.assertEqual(self.client.get(reverse(item.url_name)).status_code, 200, item.url_name)
 
+    def test_seed_demo_loads_and_refuses_to_run_twice(self):
+        from io import StringIO
+
+        from django.core.management import CommandError, call_command
+        from django.test import override_settings
+        from django.utils import timezone
+
+        from orders.models import Order, OrderStatusHistory
+
+        with override_settings(MEDIA_ROOT="/home/hermes/.hermes/cache/scratch/sku-media-test"):
+            call_command("seed_demo", stdout=StringIO())
+            self.assertGreater(Order.objects.count(), 20)
+            self.assertTrue(Order.objects.filter(status="PENDING_PAYMENT", payments__receipt_image__gt="").exists())
+            self.assertFalse(OrderStatusHistory.objects.filter(created_at__gt=timezone.now()).exists())
+            with self.assertRaises(CommandError):
+                call_command("seed_demo", stdout=StringIO())
+
     def test_storefront_pages_render(self):
         for name in ["core:home", "catalog:product_list", "cart:detail", "accounts:login", "accounts:register"]:
             self.assertEqual(self.client.get(reverse(name)).status_code, 200, name)

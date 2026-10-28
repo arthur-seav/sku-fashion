@@ -312,6 +312,10 @@ input[type="file"].form-control { padding: 0.3rem 0.625rem; }
 .pagination .page-link { border-radius: calc(var(--radius) * 0.8) !important; min-width: 2.25rem; text-align: center; }
 
 /* ---- Misc -------------------------------------------------------------- */
+code {
+  color: var(--foreground); background: var(--muted);
+  padding: 0.1rem 0.35rem; border-radius: calc(var(--radius) * 0.6); font-size: 0.8125em;
+}
 .nav-tabs { --bs-nav-tabs-border-color: var(--border); --bs-nav-tabs-link-active-bg: var(--background); }
 .nav-link { color: var(--muted-foreground); }
 .nav-link:hover { color: var(--foreground); }

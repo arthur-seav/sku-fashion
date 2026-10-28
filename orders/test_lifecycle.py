@@ -110,6 +110,16 @@ class TransitionTests(LifecycleTestCase):
         page = self.client.get(reverse("orders:order_detail", args=[order.order_no]))
         self.assertContains(page, "VET-42")
 
+    def test_shipment_uses_current_status_not_a_stale_instance(self):
+        """Regression: the caller's order object can be out of date (found by seed_demo)."""
+        order = self.order("BANK_TRANSFER")
+        stale = Order.objects.get(pk=order.pk)               # still Pending Payment in memory
+        PaymentService(self.customer).upload_receipt(order.payment, tiny_png())
+        PaymentService(self.staff).reconcile(order.payment)
+        OrderWorkflow(order, self.staff).transition(OrderStatus.PREPARING)
+        ShipmentService(self.staff).create(stale, "J&T Express", "JT-9")
+        self.assertEqual(Order.objects.get(pk=order.pk).status, OrderStatus.SHIPPED)
+
     def test_receipt_rejected_for_cash_on_delivery(self):
         order = self.order()
         response = self.client.post(reverse("orders:upload_receipt", args=[order.order_no]),
@@ -183,6 +193,22 @@ class AutoCancelTests(LifecycleTestCase):
         self.assertIsNone(entry.user)  # the system is the operator
         self.v1.refresh_from_db()
         self.assertEqual(self.v1.stock_qty, 3)  # 5 − 1 − 1 − 1 + 1 restored
+
+    def test_order_with_uploaded_receipt_is_kept_and_dry_run_changes_nothing(self):
+        with_receipt = self.order("BANK_TRANSFER", qty=1)
+        unpaid = self.order("BANK_TRANSFER", qty=1)
+        PaymentService(self.customer).upload_receipt(with_receipt.payment, tiny_png())
+        Order.objects.update(placed_at=timezone.now() - timedelta(hours=30))
+
+        out = StringIO()
+        call_command("cancel_unpaid_orders", "--dry-run", stdout=out)
+        self.assertIn(f"Would cancel 1 order(s): {unpaid.order_no}", out.getvalue())
+        self.assertFalse(Order.objects.filter(status=OrderStatus.CANCELLED).exists())
+
+        call_command("cancel_unpaid_orders", stdout=StringIO())
+        statuses = dict(Order.objects.values_list("pk", "status"))
+        self.assertEqual(statuses[with_receipt.pk], OrderStatus.PENDING_PAYMENT)  # waiting for Staff
+        self.assertEqual(statuses[unpaid.pk], OrderStatus.CANCELLED)
 
 
 class BackofficeOrderViewTests(LifecycleTestCase):

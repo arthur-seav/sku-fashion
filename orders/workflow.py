@@ -71,13 +71,18 @@ class OrderWorkflow:
         return self._set_status(order, OrderStatus.CANCELLED, note.strip())
 
     @classmethod
-    def cancel_expired(cls, hours=None, now=None):
+    def cancel_expired(cls, hours=None, now=None, dry_run=False):
         """FR-X09: bank-transfer orders unpaid for over 24 h are cancelled.
-        Cash-on-delivery orders never sit in Pending Payment, so they are exempt."""
+        Cash-on-delivery orders never sit in Pending Payment, so they are exempt.
+        Orders whose customer already uploaded a receipt are kept: the money has
+        been sent and is only waiting for Staff to reconcile it."""
         hours = settings.UNPAID_ORDER_TIMEOUT_HOURS if hours is None else hours
         cutoff = (now or timezone.now()) - timedelta(hours=hours)
-        expired = Order.objects.filter(status=OrderStatus.PENDING_PAYMENT, placed_at__lt=cutoff,
-                                       payments__provider="BANK_TRANSFER", payments__status="PENDING").distinct()
+        expired = (Order.objects.filter(status=OrderStatus.PENDING_PAYMENT, placed_at__lt=cutoff,
+                                        payments__provider="BANK_TRANSFER", payments__status="PENDING")
+                   .exclude(payments__receipt_image__gt="").distinct().order_by("placed_at"))
+        if dry_run:
+            return [o.order_no for o in expired]
         cancelled = []
         for order in expired:
             cls(order, user=None).cancel(f"Automatically cancelled: unpaid for over {hours} hours.")
