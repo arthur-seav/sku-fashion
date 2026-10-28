@@ -15,6 +15,7 @@ urlpatterns = [
     path("backoffice/accounts/", include("accounts.backoffice_urls")),
     path("backoffice/catalog/", include("catalog.backoffice_urls")),
     path("backoffice/inventory/", include("inventory.backoffice_urls")),
+    path("backoffice/promotions/", include("promotions.backoffice_urls")),
 ]
 
 if settings.DEBUG:

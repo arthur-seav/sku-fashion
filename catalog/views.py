@@ -3,6 +3,8 @@
 from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
 
+from promotions.pricing import PricingService
+
 from .models import Product
 from .query import ProductCatalogQuery, ProductFilter
 
@@ -20,6 +22,7 @@ class ProductListView(ListView):
         ctx = super().get_context_data(**kwargs)
         ctx["f"] = self.filter
         ctx.update(ProductCatalogQuery.facets())
+        PricingService().decorate(ctx["products"])
         return ctx
 
 
@@ -44,8 +47,14 @@ class ProductDetailView(DetailView):
         by_color = {}
         for v in variants:
             by_color.setdefault(v.color, []).append(v)
+        pricing = PricingService()
+        for v in variants:
+            quote = pricing.quote(v)
+            v.unit_price, v.campaign = quote.unit, quote.campaign
         ctx["variants"] = variants
         product.min_price = min((v.price for v in variants), default=product.base_price)
+        pricing.decorate([product])
+        ctx["campaign"] = product.campaign
         ctx["variants_by_color"] = by_color.items()
         ctx["size_chart"] = product.size_chart()
         ctx["breadcrumbs"] = [*product.category.ancestors(), product.category]

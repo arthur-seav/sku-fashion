@@ -162,14 +162,22 @@ class StorefrontCatalogTests(TestCase):
     def test_filter_by_price_range_uses_lowest_variant_price(self):
         self.assertEqual(self._names(min_price="10", max_price="20"), ["Cotton Tee"])
 
-    def test_listing_query_count_is_constant(self):
+    def test_listing_query_count_does_not_grow_with_products(self):
+        """NFR-01: no N+1 — 2 products or 12 products cost the same queries."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
         from core.testing import make_variant
+        url = reverse("catalog:product_list")
+
+        def count():
+            with CaptureQueriesContext(connection) as ctx:
+                self.client.get(url)
+            return len(ctx.captured_queries)
+
+        before = count()
         for i in range(10):
             make_variant(make_product(f"Extra {i}", "9.00"), color="Black", size="S")
-        url = reverse("catalog:product_list")
-        self.client.get(url)  # warm up
-        with self.assertNumQueries(10):
-            self.client.get(url)
+        self.assertEqual(count(), before)
 
     def test_detail_shows_variants_stock_and_size_chart(self):
         from .models import SizeChart

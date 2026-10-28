@@ -6,28 +6,13 @@ from decimal import Decimal
 from django.db import transaction
 
 from catalog.models import ProductVariant
+from promotions.pricing import PricingService
 
 from .models import Cart, CartItem
 
 
 class CartError(Exception):
     """A cart change was refused; the message is shown to the shopper."""
-
-
-@dataclass
-class PriceQuote:
-    original: Decimal          # variant price before any campaign
-    unit: Decimal              # price actually charged
-    campaign: object = None    # promotions.Campaign applied, if any
-
-    @property
-    def discount(self):
-        return self.original - self.unit
-
-
-def list_price(variant):
-    """Default pricer: no promotions."""
-    return PriceQuote(original=variant.price, unit=variant.price)
 
 
 @dataclass
@@ -91,7 +76,8 @@ class CartService:
 
     @staticmethod
     def default_pricer():
-        return list_price
+        """Current prices including running campaigns (FR-S09)."""
+        return PricingService().quote
 
     # ---- cart lookup ---------------------------------------------------
     def get_cart(self, create=False):

@@ -49,7 +49,7 @@
                 <label class="btn btn-outline-secondary" for="v-{{ v.pk }}" title="{{ v.sku }}">
                   {{ v.size.name }}
                   <span class="small {% if v.is_sold_out %}text-danger{% elif v.is_low_stock %}text-warning{% else %}text-muted{% endif %}">
-                    · {% if v.is_sold_out %}Sold out{% elif v.is_low_stock %}Only {{ v.stock_qty }} left{% else %}{{ v.unit_price|default:v.price|money }}{% endif %}
+                    · {% if v.is_sold_out %}Sold out{% elif v.is_low_stock %}Only {{ v.stock_qty }} left{% else %}{% if v.campaign %}<span class="price-sale">{{ v.unit_price|money }}</span>{% else %}{{ v.price|money }}{% endif %}{% endif %}
                   </span>
                 </label>
               {% endfor %}
