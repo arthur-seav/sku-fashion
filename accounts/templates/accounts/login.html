@@ -1,0 +1,15 @@
+{% extends "auth_base.html" %}
+{% block title %}Sign in · {{ STORE_NAME }}{% endblock %}
+{% block auth_content %}
+<h1 class="h4 mb-1">Welcome back</h1>
+<p class="text-muted mb-4">Sign in with your email address and password.</p>
+<form method="post" novalidate>
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{{ request.GET.next }}">
+  {% include "partials/form_fields.html" with form=form %}
+  <button class="btn btn-primary w-100" type="submit">Sign in</button>
+</form>
+{% endblock %}
+{% block auth_footer %}
+<p class="text-center text-muted mt-3">New here? <a href="{% url 'accounts:register' %}">Create an account</a></p>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% load ui %}<nav class="bo-nav">
+  {% for group in groups %}
+    <div class="bo-nav-label">{{ group.label }}</div>
+    {% for item in group.items %}
+      <a class="bo-nav-link{% if item.active %} active{% endif %}" href="{{ item.url }}">
+        {% icon item.icon %}
+        <span class="text-truncate">{{ item.label }}</span>
+        {% if item.badge %}<span class="bo-nav-badge{% if item.badge_key == 'low_stock' %} tone-danger{% endif %}">{{ item.badge }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  {% endfor %}
+</nav>

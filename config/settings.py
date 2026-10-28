@@ -6,6 +6,7 @@ All secrets and environment-specific values are read from `.env`
 """
 
 import os
+import sys
 from decimal import Decimal
 from pathlib import Path
 
@@ -40,7 +41,15 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     # Project apps
     "core",
+    "accounts",
+    "reporting",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ["accounts.backends.LockoutAwareBackend"]
+LOGIN_URL = "accounts:login"
+LOGIN_REDIRECT_URL = "core:home"
+PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3  # set-password links stay valid for 3 days
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -94,6 +103,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 PASSWORD_HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
 ]
+
+if "test" in sys.argv:
+    # Hashing speed only matters for the test run; production stays on PBKDF2.
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},

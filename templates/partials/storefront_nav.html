@@ -1,8 +1,43 @@
-<nav class="navbar navbar-expand navbar-dark bg-dark">
+{% load ui %}
+<nav class="navbar navbar-expand border-bottom bg-body">
   <div class="container">
-    <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">{{ STORE_NAME }}</a>
+    <a class="navbar-brand fw-semibold d-flex align-items-center gap-2" href="{% url 'core:home' %}">
+      <span class="d-inline-flex align-items-center justify-content-center rounded-circle" style="width:2rem;height:2rem;background:var(--primary);color:var(--primary-foreground)">{% icon "shirt" %}</span>
+      {{ STORE_NAME }}
+    </a>
     <ul class="navbar-nav me-auto">
       <li class="nav-item"><a class="nav-link" href="{% url 'core:home' %}">Home</a></li>
+      {% url 'catalog:product_list' as shop_url %}{% if shop_url %}<li class="nav-item"><a class="nav-link" href="{{ shop_url }}">Shop</a></li>{% endif %}
+    </ul>
+    {% if shop_url %}
+    <form class="d-flex me-3" method="get" action="{{ shop_url }}" role="search">
+      <input class="form-control" type="search" name="q" placeholder="Search products" value="{{ request.GET.q }}" style="width: 16rem">
+    </form>
+    {% endif %}
+    <ul class="navbar-nav align-items-center gap-1">
+      {% url 'cart:detail' as cart_url %}{% if cart_url %}
+      <li class="nav-item">
+        <a class="btn btn-ghost" href="{{ cart_url }}">{% icon "shopping-bag" %} Cart{% if cart_count %} <span class="badge tone-neutral">{{ cart_count }}</span>{% endif %}</a>
+      </li>
+      {% endif %}
+      {% if user.is_authenticated %}
+        <li class="nav-item dropdown">
+          <button class="btn btn-ghost dropdown-toggle" data-bs-toggle="dropdown">{% icon "user" %} {{ user.first_name }}</button>
+          <div class="dropdown-menu dropdown-menu-end">
+            {% if user.is_backoffice %}<a class="dropdown-item" href="{% url 'reporting:dashboard' %}">{% icon "layout-dashboard" %} Back-office</a>{% endif %}
+            <a class="dropdown-item" href="{% url 'accounts:profile' %}">{% icon "user" %} Profile</a>
+            {% if user.is_customer %}
+              {% url 'orders:order_list' as orders_url %}{% if orders_url %}<a class="dropdown-item" href="{{ orders_url }}">{% icon "receipt" %} My orders</a>{% endif %}
+              <a class="dropdown-item" href="{% url 'accounts:address_list' %}">{% icon "map-pin" %} Addresses</a>
+            {% endif %}
+            <div class="dropdown-divider"></div>
+            <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item" type="submit">{% icon "log-out" %} Sign out</button></form>
+          </div>
+        </li>
+      {% else %}
+        <li class="nav-item"><a class="btn btn-ghost" href="{% url 'accounts:login' %}">Sign in</a></li>
+        <li class="nav-item"><a class="btn btn-primary" href="{% url 'accounts:register' %}">Register</a></li>
+      {% endif %}
     </ul>
   </div>
 </nav>

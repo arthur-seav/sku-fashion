@@ -1,0 +1,11 @@
+{% load ui %}
+<div class="list-group">
+  <a href="{% url 'accounts:profile' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if active == 'profile' %} active{% endif %}">{% icon "user" %} Profile</a>
+  {% if request.user.is_customer %}
+    <a href="{% url 'accounts:address_list' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if active == 'addresses' %} active{% endif %}">{% icon "map-pin" %} Addresses</a>
+    {% url 'orders:order_list' as orders_url %}{% if orders_url %}
+    <a href="{{ orders_url }}" class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if active == 'orders' %} active{% endif %}">{% icon "shopping-bag" %} My orders</a>
+    {% endif %}
+  {% endif %}
+  <a href="{% url 'accounts:password_change' %}" class="list-group-item list-group-item-action d-flex align-items-center gap-2{% if active == 'password' %} active{% endif %}">{% icon "key-round" %} Password</a>
+</div>

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}My profile · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="profile" %}</div>
+  <div class="col-6">
+    <div class="card">
+      <div class="card-header">Personal details</div>
+      <div class="card-body">
+        <p class="text-muted">Signed in as <strong>{{ request.user.email }}</strong></p>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "partials/form_fields.html" with form=form %}
+          <button class="btn btn-primary" type="submit">Save changes</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

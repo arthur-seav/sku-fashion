@@ -1,0 +1,17 @@
+{% extends "backoffice/base.html" %}
+{% block title %}New back-office account{% endblock %}
+{% block breadcrumb %}<li>Administration</li><li><a href="{% url 'accounts_bo:account_list' %}">Back-office accounts</a></li><li>New</li>{% endblock %}
+{% block page_title %}New back-office account{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">The new user receives an email with a link to set their own password.</p>{% endblock %}
+{% block content %}
+<div class="card" style="max-width: 36rem">
+  <div class="card-body">
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% include "partials/form_fields.html" with form=form %}
+      <button class="btn btn-primary" type="submit">Create account</button>
+      <a class="btn btn-outline-secondary" href="{% url 'accounts_bo:account_list' %}">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

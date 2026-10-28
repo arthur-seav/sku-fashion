@@ -1,0 +1,116 @@
+{% load static ui %}<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Back-office{% endblock %} · {{ STORE_NAME }}</title>
+  <script>
+    // Apply saved theme and sidebar state before first paint (no flash).
+    (function () {
+      var root = document.documentElement;
+      var theme = localStorage.getItem("sf-theme");
+      if (theme) root.setAttribute("data-bs-theme", theme);
+      if (localStorage.getItem("sf-sidebar") === "collapsed") root.classList.add("bo-collapsed");
+    })();
+  </script>
+  <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'css/backoffice.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="bo">
+<div class="bo-shell">
+  <aside class="bo-sidebar">
+    <a class="bo-brand" href="{% url 'reporting:dashboard' %}">
+      <span class="bo-brand-logo">{% icon "shirt" %}</span>
+      <span>
+        <span class="bo-brand-name d-block">{{ STORE_NAME }}</span>
+        <span class="bo-brand-sub">Back-office</span>
+      </span>
+    </a>
+    {% backoffice_nav %}
+  </aside>
+
+  <div class="bo-main">
+    <header class="bo-header">
+      <button type="button" class="btn btn-ghost btn-icon" id="bo-sidebar-toggle" title="Toggle sidebar">
+        {% icon "panel-left" %}
+      </button>
+      <div class="vr"></div>
+      <ol class="bo-breadcrumb">
+        {% block breadcrumb %}<li>Back-office</li>{% endblock %}
+      </ol>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <a class="btn btn-ghost btn-sm" href="{% url 'core:home' %}" target="_blank">{% icon "store" %} View store</a>
+        <button type="button" class="btn btn-ghost btn-icon" id="bo-theme-toggle" title="Toggle dark mode">
+          <span class="theme-icon-light">{% icon "moon" %}</span>
+          <span class="theme-icon-dark d-none">{% icon "sun" %}</span>
+        </button>
+        <div class="dropdown">
+          <button class="bo-avatar" type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                  title="{{ request.user.email }}">
+            {{ request.user.first_name|slice:":1"|upper }}{{ request.user.last_name|slice:":1"|upper }}
+          </button>
+          <div class="dropdown-menu dropdown-menu-end" style="min-width: 14rem">
+            <div class="px-2 py-1">
+              <div class="fw-semibold">{{ request.user.full_name }}</div>
+              <div class="text-muted small">{{ request.user.email }}</div>
+              <span class="badge {{ request.user.role|tone }} mt-1">{{ request.user.get_role_display }}</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a class="dropdown-item" href="{% url 'accounts:password_change' %}">{% icon "key-round" %} Change password</a>
+            <form method="post" action="{% url 'accounts:logout' %}">
+              {% csrf_token %}
+              <button class="dropdown-item" type="submit">{% icon "log-out" %} Sign out</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="bo-content">
+      {% include "partials/messages.html" %}
+      {% block page_head %}
+        <div class="bo-page-head">
+          <div>
+            <h1 class="bo-page-title">{% block page_title %}{% endblock %}</h1>
+            {% block page_subtitle %}{% endblock %}
+          </div>
+          <div class="d-flex gap-2">{% block page_actions %}{% endblock %}</div>
+        </div>
+      {% endblock %}
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bo-footer">
+      <span>&copy; {% now "Y" %} {{ STORE_NAME }} · SV34</span>
+      <span>Back-office design based on <a href="https://shadcnstudio.com/" target="_blank" rel="noopener">AdminCN by shadcn/studio</a> (MIT)</span>
+    </footer>
+  </div>
+</div>
+
+<script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script>
+  (function () {
+    var root = document.documentElement;
+    function syncThemeIcon() {
+      var dark = root.getAttribute("data-bs-theme") === "dark";
+      document.querySelector(".theme-icon-light").classList.toggle("d-none", dark);
+      document.querySelector(".theme-icon-dark").classList.toggle("d-none", !dark);
+    }
+    document.getElementById("bo-theme-toggle").addEventListener("click", function () {
+      var next = root.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-bs-theme", next);
+      localStorage.setItem("sf-theme", next);
+      syncThemeIcon();
+    });
+    document.getElementById("bo-sidebar-toggle").addEventListener("click", function () {
+      var collapsed = root.classList.toggle("bo-collapsed");
+      localStorage.setItem("sf-sidebar", collapsed ? "collapsed" : "open");
+    });
+    syncThemeIcon();
+  })();
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
