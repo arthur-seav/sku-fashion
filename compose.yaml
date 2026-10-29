@@ -1,6 +1,6 @@
 # Production stack for the VPS. See deploy/README.md.
-# Every published port is bound to 127.0.0.1: Docker writes its own iptables
-# rules and would otherwise bypass ufw. Caddy on the host is the only way in.
+# Docker writes its own iptables rules and bypasses ufw, so only Caddy publishes
+# public ports (80/443). The web port is bound to 127.0.0.1 for debugging only.
 name: sku-fashion
 
 x-app: &app
@@ -47,5 +47,26 @@ services:
     volumes:
       - ./media:/app/media
 
+  # HTTPS, /media/ from disk, everything else to `web`.
+  caddy:
+    image: caddy:2.11
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./media:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+
 volumes:
   pgdata:
+  caddy_data:
+  caddy_config:
