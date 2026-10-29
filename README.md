@@ -5,7 +5,7 @@ Fashion e-commerce management system — SV34 final project (Advanced Python Pro
 - **Storefront** for customers: browse and filter clothing, pick size/colour variants, cart, coupons, checkout with cash on delivery or bank transfer, order tracking, product reviews.
 - **Back-office** for Staff and Admin: catalog with SKU variants, inventory with stock movements, promotions, shipping, order workflow and payment reconciliation, review moderation, reports.
 
-The requirements, use cases and ERD are in `../doc/SKU-Fashion.pdf`.
+The requirements, use cases and ERD are in `../doc/SKU-Fashion.pdf`. Server deployment (Docker Compose + Caddy) is described in [`deploy/README.md`](deploy/README.md).
 
 | | |
 |---|---|

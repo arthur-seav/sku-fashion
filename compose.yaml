@@ -1,0 +1,51 @@
+# Production stack for the VPS. See deploy/README.md.
+# Every published port is bound to 127.0.0.1: Docker writes its own iptables
+# rules and would otherwise bypass ufw. Caddy on the host is the only way in.
+name: sku-fashion
+
+x-app: &app
+  build: .
+  image: sku-fashion-web
+  restart: unless-stopped
+  env_file: .env
+  environment:
+    DB_HOST: db
+    DB_PORT: "5432"
+    DJANGO_PRODUCTION: "1"
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  web:
+    <<: *app
+    command: sh -c "python manage.py migrate --noinput && exec gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60 --access-logfile -"
+    ports:
+      - "127.0.0.1:8034:8000"
+    volumes:
+      - ./media:/app/media
+
+  # FR-X09: cancel unpaid bank-transfer orders, once an hour.
+  scheduler:
+    <<: *app
+    command: sh -c "while true; do python manage.py cancel_unpaid_orders; sleep 3600; done"
+    volumes:
+      - ./media:/app/media
+
+volumes:
+  pgdata:

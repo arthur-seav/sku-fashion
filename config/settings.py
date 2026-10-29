@@ -27,6 +27,11 @@ def env_list(name, default=""):
 SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 DEBUG = env_bool("DJANGO_DEBUG", False)
 ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
+CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+
+# DJANGO_PRODUCTION=1 on the server (set by compose.yaml): HTTPS behind Caddy,
+# compressed and hashed static files. Development leaves it off.
+PRODUCTION = env_bool("DJANGO_PRODUCTION", False)
 
 # --------------------------------------------------------------------------
 # Applications — one Django app per functional area (NFR-07)
@@ -61,6 +66,7 @@ PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 * 3  # set-password links stay valid for 3
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves /static/ from the app (no separate web server needed)
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -140,7 +146,13 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = BASE_DIR / "media"  # on the server, Caddy serves this folder directly at /media/
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": ("whitenoise.storage.CompressedManifestStaticFilesStorage" if PRODUCTION
+                                else "django.contrib.staticfiles.storage.StaticFilesStorage")},
+}
 
 # Uploaded images are limited to 5 MB (NFR-03)
 MAX_UPLOAD_IMAGE_BYTES = 5 * 1024 * 1024
@@ -165,3 +177,23 @@ STORE_BANK_ACCOUNT_NO = os.getenv("STORE_BANK_ACCOUNT_NO", "000 123 456")
 
 # Unpaid bank-transfer orders are cancelled after this many hours (FR-X09)
 UNPAID_ORDER_TIMEOUT_HOURS = int(os.getenv("UNPAID_ORDER_TIMEOUT_HOURS", "24"))
+
+# --------------------------------------------------------------------------
+# Production (HTTPS terminated by Caddy in front of gunicorn)
+# --------------------------------------------------------------------------
+if PRODUCTION:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")  # Caddy sets this header
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = int(os.getenv("DJANGO_HSTS_SECONDS", "3600"))
+    # The site lives on a subdomain of a shared domain we do not own (sslip.io),
+    # so HSTS must not cover sibling subdomains or be submitted for preloading.
+    SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {"console": {"class": "logging.StreamHandler"}},
+        "root": {"handlers": ["console"], "level": "INFO"},
+        "loggers": {"django": {"handlers": ["console"], "level": "INFO", "propagate": False}},
+    }
