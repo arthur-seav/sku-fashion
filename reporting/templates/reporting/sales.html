@@ -26,13 +26,13 @@
         <tr class="{% if not r.orders %}text-muted{% endif %}">
           <td>{% if group == "month" %}{{ r.bucket|date:"F Y" }}{% else %}{{ r.bucket|date:"D, j M Y" }}{% endif %}</td>
           <td class="text-end">{{ r.orders }}</td><td class="text-end">{{ r.items }}</td>
-          <td class="text-end">{{ r.gross|money }}</td><td class="text-end">−{{ r.discounts|money }}</td>
+          <td class="text-end">{{ r.gross|money }}</td><td class="text-end">{% if r.discounts %}−{% endif %}{{ r.discounts|money }}</td>
           <td class="text-end">{{ r.tax|money }}</td><td class="text-end">{{ r.shipping|money }}</td>
           <td class="text-end fw-medium">{{ r.revenue|money }}</td>
         </tr>
       {% endfor %}
       </tbody>
-      <tfoot><tr class="fw-semibold"><td>Total</td><td class="text-end">{{ totals.orders }}</td><td class="text-end">{{ totals.items }}</td><td class="text-end">{{ totals.gross|money }}</td><td class="text-end">−{{ totals.discounts|money }}</td><td class="text-end">{{ totals.tax|money }}</td><td class="text-end">{{ totals.shipping|money }}</td><td class="text-end">{{ totals.revenue|money }}</td></tr></tfoot>
+      <tfoot><tr class="fw-semibold"><td>Total</td><td class="text-end">{{ totals.orders }}</td><td class="text-end">{{ totals.items }}</td><td class="text-end">{{ totals.gross|money }}</td><td class="text-end">{% if totals.discounts %}−{% endif %}{{ totals.discounts|money }}</td><td class="text-end">{{ totals.tax|money }}</td><td class="text-end">{{ totals.shipping|money }}</td><td class="text-end">{{ totals.revenue|money }}</td></tr></tfoot>
     </table>
   </div>
 </div>

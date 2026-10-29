@@ -34,6 +34,17 @@ def _state(rule):
     return format_html('<span class="badge tone-{}">{}</span>', tone, label)
 
 
+
+def covers(n_categories, n_products):
+    """E.g. "1 category · 3 products"; parts with zero are left out."""
+    parts = []
+    if n_categories:
+        parts.append(f"{n_categories} {'category' if n_categories == 1 else 'categories'}")
+    if n_products:
+        parts.append(f"{n_products} product{'' if n_products == 1 else 's'}")
+    return " · ".join(parts) or "—"
+
+
 class CouponViewSet(CrudViewSet):
     model = Coupon
     form_class = CouponForm
@@ -63,7 +74,7 @@ class CampaignViewSet(CrudViewSet):
     list_display = [
         ("Campaign", "name"),
         ("Discount", _value),
-        ("Covers", lambda c: f"{c.n_categories} categories · {c.n_products} products"),
+        ("Covers", lambda c: covers(c.n_categories, c.n_products)),
         ("Period", _period),
         ("Status", _state),
     ]

@@ -47,7 +47,7 @@
           <div class="card-body border-top">
             <dl class="dl-grid ms-auto" style="grid-template-columns: 1fr auto; max-width: 20rem">
               <dt>Subtotal</dt><dd class="text-end">{{ order.subtotal|money }}</dd>
-              <dt>Discount{% if coupon_redemption %} (incl. {{ coupon_redemption.coupon.code }}){% endif %}</dt><dd class="text-end">−{{ order.discount_total|money }}</dd>
+              <dt>Discount{% if coupon_redemption %} (incl. {{ coupon_redemption.coupon.code }}){% endif %}</dt><dd class="text-end">{% if order.discount_total %}−{% endif %}{{ order.discount_total|money }}</dd>
               <dt>Shipping · {{ order.shipping_method.name }}</dt><dd class="text-end">{{ order.shipping_fee|money }}</dd>
               <dt>VAT</dt><dd class="text-end">{{ order.tax_total|money }}</dd>
               <dt class="fw-semibold text-body">Total</dt><dd class="text-end fw-semibold fs-5">{{ order.grand_total|money }}</dd>
