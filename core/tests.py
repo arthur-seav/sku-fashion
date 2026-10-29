@@ -55,10 +55,9 @@ class NavigationTests(TestCase):
                 primary = product.primary_image
                 self.assertTrue(primary and primary.image.name.endswith(".jpg"), f"{product} has no photo")
             from accounts.models import User
-            team = {"Kimsear", "Seav", "Phakdey", "Sin", "Samnang", "Sophat"}  # SA document cover
-            names = set(User.objects.values_list("first_name", flat=True)) | set(
-                User.objects.values_list("last_name", flat=True))
-            self.assertFalse(team & names)
+            # Demo staff accounts use fictional names, never the project team's.
+            staff_names = set(User.objects.exclude(role=User.Role.CUSTOMER).values_list("first_name", "last_name"))
+            self.assertEqual(staff_names, {("Bopha", "Keo"), ("Visal", "Heng"), ("Malis", "Prak")})
             with self.assertRaises(CommandError):
                 call_command("seed_demo", stdout=StringIO())
 
