@@ -1,0 +1,25 @@
+# /etc/caddy/Caddyfile on the VPS (see deploy/README.md, step 6).
+# Replace the email; Caddy uses it for the ACME account. With an email set,
+# Caddy falls back to ZeroSSL if Let's Encrypt refuses the certificate
+# (sslip.io is not on the Public Suffix List, so its weekly quota is shared).
+{
+	email you@example.com
+}
+
+202-61-200-81.sslip.io {
+	encode zstd gzip
+
+	# Uploaded product images and payment receipts, straight from disk.
+	handle_path /media/* {
+		root * /srv/sku-fashion/media
+		file_server
+	}
+
+	# Everything else goes to gunicorn in the `web` container.
+	handle {
+		request_body {
+			max_size 10MB
+		}
+		reverse_proxy 127.0.0.1:8034
+	}
+}
