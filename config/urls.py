@@ -11,6 +11,7 @@ urlpatterns = [
     path("cart/", include("cart.urls")),
     path("orders/", include("orders.urls")),
     path("account/", include("accounts.urls")),
+    path("account/reviews/", include("reviews.urls")),
     # Back-office (Staff / Admin)
     path("backoffice/", include("reporting.urls")),
     path("backoffice/accounts/", include("accounts.backoffice_urls")),
@@ -19,6 +20,7 @@ urlpatterns = [
     path("backoffice/promotions/", include("promotions.backoffice_urls")),
     path("backoffice/shipping/", include("shipping.backoffice_urls")),
     path("backoffice/orders/", include("orders.backoffice_urls")),
+    path("backoffice/reviews/", include("reviews.backoffice_urls")),
 ]
 
 if settings.DEBUG:

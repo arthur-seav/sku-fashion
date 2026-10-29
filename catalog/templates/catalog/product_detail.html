@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load ui %}
+{% load ui reviews %}
 {% block title %}{{ product.name }} · {{ STORE_NAME }}{% endblock %}
 {% block content %}
 <nav class="small text-muted mb-3">
@@ -27,6 +27,12 @@
   <div class="col-6">
     <div class="text-muted">{{ product.brand.name }}</div>
     <h1 class="h2 mb-2">{{ product.name }}</h1>
+    {% if review_summary.count %}
+      <a class="d-inline-flex align-items-center gap-2 text-decoration-none text-body small mb-2" href="#reviews">
+        {% stars review_summary.average %} <span class="fw-medium">{{ review_summary.average }}</span>
+        <span class="text-muted">({{ review_summary.count }} review{{ review_summary.count|pluralize }})</span>
+      </a>
+    {% endif %}
     <div class="fs-4 mb-3" id="price-display">
       {% if product.sale_price is not None and product.sale_price < product.min_price %}
         <span class="price-sale">{{ product.sale_price|money }}</span> <span class="price-original">{{ product.min_price|money }}</span>
@@ -91,4 +97,6 @@
     {% endif %}
   </div>
 </div>
+
+{% include "reviews/partials/product_reviews.html" %}
 {% endblock %}

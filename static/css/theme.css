@@ -346,3 +346,14 @@ hr { border-color: var(--border); opacity: 1; }
   display: inline-block; width: 0.875rem; height: 0.875rem; border-radius: 50%;
   box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--foreground) 20%, transparent); vertical-align: middle;
 }
+
+/* ---- Reviews (stars, rating picker, distribution bars) ---------------- */
+.stars { display: inline-flex; gap: .1em; vertical-align: -.125em; line-height: 1; }
+.stars .icon { width: 1em; height: 1em; }
+.star-on { color: #f59e0b; }
+.star-off { color: var(--bs-border-color); }
+.rating-picker { display: flex; flex-wrap: wrap; gap: .5rem; }
+.rating-picker .btn { display: inline-flex; flex-direction: column; align-items: center; gap: .25rem; }
+.rating-bar { background-color: #f59e0b; }
+.rating-picker .btn-check:checked + .btn { border-color: #f59e0b; color: var(--foreground);
+  background: color-mix(in oklch, #f59e0b 14%, transparent); box-shadow: 0 0 0 1px #f59e0b; }

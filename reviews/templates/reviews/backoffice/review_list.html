@@ -1,0 +1,80 @@
+{% extends "backoffice/base.html" %}
+{% load ui reviews %}
+{% block title %}Reviews{% endblock %}
+{% block breadcrumb %}<li>Catalog</li><li>Reviews</li>{% endblock %}
+{% block page_title %}Reviews{% endblock %}
+{% block page_subtitle %}<p class="bo-page-sub">Customer reviews appear on the product page only after approval. A rejected review goes back to the customer with your reason.</p>{% endblock %}
+{% block content %}
+<ul class="nav nav-tabs mb-3">
+  {% for value, label, n in status_tabs %}
+    <li class="nav-item"><a class="nav-link {% if current_status == value %}active{% endif %}" href="?status={{ value }}">{{ label }} <span class="badge {{ value|tone }} ms-1">{{ n }}</span></a></li>
+  {% endfor %}
+  <li class="nav-item"><a class="nav-link {% if current_status == 'all' %}active{% endif %}" href="?status=all">All <span class="badge tone-outline ms-1">{{ total_count }}</span></a></li>
+</ul>
+<form class="filter-bar mb-3" method="get">
+  <input type="hidden" name="status" value="{{ current_status }}">
+  <input class="form-control" type="search" name="q" value="{{ request.GET.q }}" placeholder="Product, customer, order no., text" style="min-width: 18rem">
+  <select class="form-select" name="rating" style="width: auto">
+    <option value="">Any rating</option>
+    {% for r in ratings %}<option value="{{ r }}" {% if request.GET.rating == r|stringformat:"d" %}selected{% endif %}>{{ r }} star{{ r|pluralize }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-outline-secondary" type="submit">{% icon "funnel" %} Filter</button>
+  {% if request.GET.q or request.GET.rating %}<a class="btn btn-ghost" href="?status={{ current_status }}">Clear</a>{% endif %}
+</form>
+
+{% for review in reviews %}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-8">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            {% stars review.rating %}
+            <span class="badge {{ review.status|tone }}">{{ review.get_status_display }}</span>
+          </div>
+          <div class="fw-medium">
+            <a class="text-decoration-none" href="{% url 'catalog_bo:product_detail' review.order_item.variant.product.pk %}">{{ review.order_item.product_name }}</a>
+            <span class="text-muted fw-normal small">· {{ review.order_item.variant_spec }}</span>
+          </div>
+          {% if review.comment %}
+            <p class="mb-0 mt-2" style="white-space: pre-line">{{ review.comment }}</p>
+          {% else %}
+            <p class="mb-0 mt-2 text-muted fst-italic">Rating only, no text.</p>
+          {% endif %}
+          <div class="text-muted small mt-2">
+            {{ review.order_item.order.user.full_name }} ({{ review.order_item.order.user.email }}) ·
+            order <a class="text-decoration-none" href="{% url 'orders_bo:order_detail' review.order_item.order.order_no %}">{{ review.order_item.order.order_no }}</a> ·
+            submitted {{ review.submitted_at|date:"d M Y H:i" }}
+          </div>
+          {% if review.moderated_by %}
+            <div class="text-muted small">
+              {% if review.status == "APPROVED" %}Approved{% else %}Rejected{% endif %} by {{ review.moderated_by.full_name }} on {{ review.moderated_at|date:"d M Y H:i" }}{% if review.moderation_note %} — “{{ review.moderation_note }}”{% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="col-4">
+          {% if review.status != "APPROVED" %}
+            <form method="post" action="{% url 'reviews_bo:review_moderate' review.pk 'approve' %}" class="mb-2">
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <button class="btn btn-primary w-100" type="submit">{% icon "circle-check" %} Approve &amp; publish</button>
+            </form>
+          {% endif %}
+          {% if review.status != "REJECTED" %}
+            <form method="post" action="{% url 'reviews_bo:review_moderate' review.pk 'reject' %}">
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <div class="input-group">
+                <input class="form-control" name="note" maxlength="255" required placeholder="Reason (shown to customer)" aria-label="Reason for rejecting">
+                <button class="btn btn-outline-danger" type="submit">{% if review.status == "APPROVED" %}Unpublish{% else %}Reject{% endif %}</button>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% empty %}
+  <div class="card"><div class="card-body text-center text-muted py-4">
+    {% if current_status == "PENDING" and not request.GET.q and not request.GET.rating %}No reviews waiting for moderation.{% else %}No reviews match.{% endif %}
+  </div></div>
+{% endfor %}
+{% if is_paginated %}<div class="card">{% include "backoffice/partials/pagination.html" %}</div>{% endif %}
+{% endblock %}

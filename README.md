@@ -2,8 +2,8 @@
 
 Fashion e-commerce management system — SV34 final project (Advanced Python Programming).
 
-- **Storefront** for customers: browse and filter clothing, pick size/colour variants, cart, coupons, checkout with cash on delivery or bank transfer, order tracking.
-- **Back-office** for Staff and Admin: catalog with SKU variants, inventory with stock movements, promotions, shipping, order workflow and payment reconciliation, reports.
+- **Storefront** for customers: browse and filter clothing, pick size/colour variants, cart, coupons, checkout with cash on delivery or bank transfer, order tracking, product reviews.
+- **Back-office** for Staff and Admin: catalog with SKU variants, inventory with stock movements, promotions, shipping, order workflow and payment reconciliation, review moderation, reports.
 
 The requirements, use cases and ERD are in `../doc/SKU-Fashion.pdf`.
 
@@ -78,7 +78,7 @@ Every account uses the password `Demo-Pass-2026`. You can pick a different one w
 |---|---|---|
 | Admin | `admin@sku-fashion.local` | Everything, including managing back-office accounts |
 | Staff | `staff@sku-fashion.local`, `staff2@sku-fashion.local` | Catalog, inventory, promotions, shipping, orders, reports |
-| Customer | `dara@example.com`, `sokha@example.com`, `vibol@example.com`, `channary@example.com`, `rithy@example.com` | Shop, check out, track and cancel own orders |
+| Customer | `dara@example.com`, `sokha@example.com`, `vibol@example.com`, `channary@example.com`, `rithy@example.com` | Shop, check out, track and cancel own orders, review completed purchases |
 
 ### What the demo data contains
 
@@ -89,6 +89,7 @@ Every account uses the password `Demo-Pass-2026`. You can pick a different one w
 - Rainy Season Sale campaign: 20% off Dresses and the Light Rain Jacket.
 - Coupons: `WELCOME10` (10%, min. $20, once per customer), `FIVEOFF` ($5 off, min. $40) and the expired `SUMMER25`.
 - Three shipping methods (Standard, Express, Store pick-up), with cheaper rates for Phnom Penh and Kandal.
+- Reviews on about half of the completed items: most are published, the three newest wait in the moderation queue, and one advert was rejected. Dara keeps at least one completed item without a review, so you can write one during the demo.
 
 ---
 
@@ -115,7 +116,7 @@ Schedule it hourly with cron, for example:
 python manage.py test
 ```
 
-There are 119 tests. They include concurrency tests (two buyers competing for the last item) and rollback tests (a checkout that fails partway leaves no trace).
+There are 142 tests. They include concurrency tests (two buyers competing for the last item) and rollback tests (a checkout that fails partway leaves no trace).
 
 ---
 
@@ -135,6 +136,7 @@ Each functional area of the SA document is its own Django app (NFR-07). Business
 | `orders` | UC-07/08/10, UC-15–17 | `CheckoutService` places the order in one transaction. `OrderWorkflow` allows only permitted status changes and records each one in the history. Back-office order screens |
 | `payments` | UC-08, UC-16 | Payment providers (COD, bank transfer). `PaymentService` handles receipt upload, reconciliation and refunds (never more than was paid) |
 | `reporting` | UC-19, FR-S10/11 | Dashboard KPIs, sales report by day/month with CSV export, best sellers, stock report |
+| `reviews` | UC-22/23, FR-C08, FR-S12 (optional scope) | A customer rates each item of a completed order once. `ReviewService` checks who may write; `ReviewModerationService` approves or rejects with a reason. Only approved reviews and their average appear on the product page |
 
 ### Order status flow
 
@@ -157,8 +159,9 @@ Pending Payment ──(reconcile)──▶ Paid ──▶ Preparing ──(creat
 | `/cart/`, `/orders/checkout/` | Cart and checkout |
 | `/orders/` | Customer's own orders |
 | `/account/` | Login, register, profile, addresses |
+| `/account/reviews/` | Customer's reviews and items waiting for one |
 | `/backoffice/` | Back-office dashboard and reports |
-| `/backoffice/{catalog,inventory,promotions,shipping,orders,accounts}/` | Back-office modules |
+| `/backoffice/{catalog,inventory,promotions,shipping,orders,reviews,accounts}/` | Back-office modules |
 | `/django-admin/` | Django admin, for superusers debugging only |
 
 ---
@@ -173,6 +176,9 @@ These were decided during implementation. Each one is either needed by the code 
 - Store pick-up is a shipping method with a fee of 0.
 - VAT (10%) is charged on the subtotal after discounts.
 - FR-X09 auto-cancel skips bank-transfer orders whose customer has already uploaded a receipt. Those customers have paid; cancelling them would leave money without an order.
+- `Review` adds `submitted_at`, `moderated_by`, `moderated_at` and `moderation_note` to the ERD's four fields. The note is the reason for a rejection, and the customer sees it.
+- FR-C08 says each purchased item is reviewed "once". Here that means one review per order item: the customer can edit it while it is pending or rejected (it goes back to the queue), but not after it is published. Buying the same product again in a new order allows a new review.
+- Staff can unpublish an approved review by rejecting it with a reason.
 
 ---
 

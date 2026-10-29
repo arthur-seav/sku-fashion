@@ -1,5 +1,5 @@
 /* Storefront-specific styles (desktop target, NFR-04). Theme tokens live in theme.css. */
-body { min-width: 1280px; }
+body { min-width: 1200px; }  /* below 1280 so a 1280-wide screen with a scrollbar does not scroll sideways */
 
 .product-card { transition: box-shadow .15s; }
 .product-card:hover { box-shadow: 0 0 0 1px color-mix(in oklch, var(--foreground) 25%, transparent), 0 4px 12px rgb(0 0 0 / .06); }

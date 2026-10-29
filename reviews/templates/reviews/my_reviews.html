@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load ui reviews %}
+{% block title %}My reviews · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="reviews" %}</div>
+  <div class="col-9">
+    <h1 class="h4 mb-4">My reviews</h1>
+
+    <div class="card mb-4">
+      <div class="card-header">Waiting for your review</div>
+      {% if to_review %}
+        <ul class="list-group list-group-flush">
+          {% for item in to_review %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <a class="fw-medium text-decoration-none" href="{% url 'catalog:product_detail' item.variant.product.slug %}">{{ item.product_name }}</a>
+                <div class="text-muted small">{{ item.variant_spec }} · order {{ item.order.order_no }} · {{ item.order.placed_at|date:"d M Y" }}</div>
+              </div>
+              <a class="btn btn-sm btn-primary" href="{% url 'reviews:write' item.pk %}">{% icon "star" %} Write a review</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="card-body text-muted">Nothing to review. Items show up here once their order is completed.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-header">Submitted</div>
+      {% if reviews %}
+        <ul class="list-group list-group-flush">
+          {% for review in reviews %}
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <a class="fw-medium text-decoration-none" href="{% url 'catalog:product_detail' review.order_item.variant.product.slug %}">{{ review.order_item.product_name }}</a>
+                  <span class="text-muted small">· {{ review.order_item.variant_spec }}</span>
+                  <div class="mt-1">{% stars review.rating %}</div>
+                  {% if review.comment %}<p class="mb-1 mt-2" style="white-space: pre-line">{{ review.comment }}</p>{% endif %}
+                  {% if review.status == "REJECTED" %}<div class="small text-danger mt-1">Not published: {{ review.moderation_note }}</div>{% endif %}
+                  <div class="text-muted small mt-1">Submitted {{ review.submitted_at|date:"d M Y" }}</div>
+                </div>
+                <div class="text-end text-nowrap">
+                  <span class="badge {{ review.status|tone }}">{% if review.status == "APPROVED" %}Published{% elif review.status == "PENDING" %}Awaiting check{% else %}Not published{% endif %}</span>
+                  {% if review.is_editable %}<div class="mt-2"><a class="btn btn-sm btn-outline-secondary" href="{% url 'reviews:write' review.order_item.pk %}">{% icon "pencil" %} Edit</a></div>{% endif %}
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="card-body text-muted">You have not written any reviews yet.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

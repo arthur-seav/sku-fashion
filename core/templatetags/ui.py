@@ -32,6 +32,9 @@ STATUS_TONES = {
     # payments / shipments / generic
     "PENDING": "warning",
     "DELIVERED": "success",
+    # reviews
+    "APPROVED": "success",
+    "REJECTED": "danger",
     "IN": "success",
     "OUT": "danger",
     "CUSTOMER": "outline",

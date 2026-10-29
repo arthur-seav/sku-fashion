@@ -3,7 +3,7 @@
  * (© shadcn/studio, MIT License).
  */
 
-body.bo { min-width: 1280px; background: var(--background); }
+body.bo { min-width: 1200px; background: var(--background); }
 
 .bo-shell { display: flex; min-height: 100vh; }
 

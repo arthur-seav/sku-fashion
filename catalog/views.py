@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from django.views.generic import DetailView, ListView
 
 from promotions.pricing import PricingService
+from reviews.services import ProductReviews
 
 from .models import Product
 from .query import ProductCatalogQuery, ProductFilter
@@ -58,4 +59,7 @@ class ProductDetailView(DetailView):
         ctx["variants_by_color"] = by_color.items()
         ctx["size_chart"] = product.size_chart()
         ctx["breadcrumbs"] = [*product.category.ancestors(), product.category]
+        reviews = ProductReviews(product)
+        ctx["review_summary"] = reviews.summary()
+        ctx["reviews"] = reviews.published()
         return ctx

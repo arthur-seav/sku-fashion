@@ -27,7 +27,9 @@ from catalog.models import (Brand, Category, Color, Material, Product, ProductIm
                             SizeChart)
 from catalog.services import VariantGenerator
 from inventory.services import InventoryService
-from orders.models import Order, OrderStatus
+from orders.models import Order, OrderItem, OrderStatus
+from reviews.models import Review
+from reviews.services import ReviewModerationService, ReviewService
 from orders.services import CheckoutService
 from orders.workflow import OrderWorkflow
 from payments.services import PaymentService
@@ -120,6 +122,7 @@ class Command(BaseCommand):
             self.promotions()
         self.orders(users)  # each order is its own transaction, like real checkouts
         self.pending_bank_transfers(users)
+        self.reviews(users)
         self.stdout.write(self.style.SUCCESS("Demo data loaded."))
         self.stdout.write(f"\n  Admin     admin@sku-fashion.local\n  Staff     staff@sku-fashion.local\n"
                           f"  Customer  dara@example.com (and 4 more customers)\n  Password  {password}\n")
@@ -281,6 +284,49 @@ class Command(BaseCommand):
                 receipt = placeholder_image(f"ABA transfer {order.order_no}", "#E8EEF5", f"{order.order_no}.png")
                 PaymentService(customer).upload_receipt(order.payments.first(), receipt)
             self.backdate(order, timezone.now() - timedelta(hours=3 if with_receipt else 1))
+
+    # ---- reviews -----------------------------------------------------------
+    REVIEW_TEXT = {
+        5: ["Fits perfectly and the fabric feels great. Ordering another colour.",
+            "Exactly like the photos. Fast delivery to Phnom Penh too.",
+            "Very comfortable in this heat, breathes well.", ""],
+        4: ["Good quality for the price. Slightly long in the sleeves.",
+            "Nice colour, runs a little small — size up.", "Happy with it overall."],
+        3: ["Okay. The material is thinner than I expected.", "Average, does the job."],
+        2: ["Colour faded after two washes."],
+        1: ["Seams came apart after a week."],
+    }
+
+    def reviews(self, users):
+        """Reviews on about half of the completed items: most published, a few
+        waiting in the moderation queue, one rejected. Dara keeps at least one
+        completed item unreviewed so the demo can write a review live."""
+        staff = users["staff"]
+        dara = users["customers"][0]
+        items = list(OrderItem.objects.filter(order__status=OrderStatus.COMPLETED)
+                     .select_related("order__user").order_by("order__placed_at", "id"))
+        kept_for_demo = next((i for i in reversed(items) if i.order.user == dara), None)
+        now = timezone.now()
+        reviewed = [i for i in items if i != kept_for_demo and random.random() < 0.55]
+        for n, item in enumerate(reviewed):
+            rating = random.choice([5, 5, 5, 4, 4, 4, 3, 2, 1])
+            text = random.choice(self.REVIEW_TEXT[rating])
+            spam = n == 2  # one advert, so the rejected tab is not empty
+            if spam:
+                rating, text = 5, "Cheaper copies of this on my page — message 012 888 999!"
+            review = ReviewService(item.order.user).submit(item, rating, text)
+            completed = item.order.history.filter(to_status=OrderStatus.COMPLETED).latest("created_at").created_at
+            submitted = min(completed + timedelta(days=random.randint(1, 3), hours=random.randint(0, 8)),
+                            now - timedelta(hours=random.randint(2, 20)))
+            moderated = None
+            if n < len(reviewed) - 3:  # the newest three stay pending
+                if spam:
+                    ReviewModerationService(staff).reject(review, "Advertising and phone numbers are not allowed "
+                                                                  "in reviews.")
+                else:
+                    ReviewModerationService(staff).approve(review)
+                moderated = min(submitted + timedelta(hours=random.randint(2, 18)), now)
+            Review.objects.filter(pk=review.pk).update(submitted_at=submitted, moderated_at=moderated)
 
     @staticmethod
     def backdate(order, placed):

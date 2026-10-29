@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load ui reviews %}
+{% block title %}Review {{ item.product_name }} · {{ STORE_NAME }}{% endblock %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-3">{% include "accounts/partials/account_menu.html" with active="reviews" %}</div>
+  <div class="col-9" style="max-width: 44rem">
+    <h1 class="h4 mb-1">{% if review %}Edit your review{% else %}Write a review{% endif %}</h1>
+    <p class="text-muted mb-4">
+      <a class="text-decoration-none" href="{% url 'catalog:product_detail' item.variant.product.slug %}">{{ item.product_name }}</a>
+      · {{ item.variant_spec }} · order <a class="text-decoration-none" href="{% url 'orders:order_detail' item.order.order_no %}">{{ item.order.order_no }}</a>
+    </p>
+
+    {% if review.status == "REJECTED" %}
+      <div class="alert alert-warning">
+        <div class="fw-medium">Our team did not publish your previous review.</div>
+        <div>Reason: {{ review.moderation_note }}</div>
+        <div class="small mt-1">Edit it below and submit again; it will be checked once more.</div>
+      </div>
+    {% elif review.status == "PENDING" %}
+      <div class="alert alert-info">Your review is waiting for our team to check it. You can still change it.</div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% if form.non_field_errors %}<div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>{% endif %}
+          <div class="mb-3">
+            <label class="form-label d-block">Rating <span class="text-danger">*</span></label>
+            <div class="rating-picker">
+              {% for choice in form.rating %}
+                <input type="radio" class="btn-check" name="{{ form.rating.html_name }}" id="{{ choice.id_for_label }}" value="{{ choice.data.value }}" {% if choice.data.selected %}checked{% endif %}>
+                <label class="btn btn-outline-secondary" for="{{ choice.id_for_label }}">{% stars choice.data.value %}<span class="small">{{ choice.choice_label }}</span></label>
+              {% endfor %}
+            </div>
+            {% for e in form.rating.errors %}<div class="text-danger small mt-1">{{ e }}</div>{% endfor %}
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="{{ form.comment.id_for_label }}">Your review</label>
+            {{ form.comment }}
+            <div class="form-text">{{ form.comment.help_text }}</div>
+            {% for e in form.comment.errors %}<div class="text-danger small">{{ e }}</div>{% endfor %}
+          </div>
+          <p class="text-muted small">Reviews are checked by our team before they appear on the product page. Your first name and last initial are shown with it.</p>
+          <div class="d-flex gap-2">
+            <button class="btn btn-primary" type="submit">{% icon "circle-check" %} Submit review</button>
+            <a class="btn btn-outline-secondary" href="{% url 'reviews:my_reviews' %}">Cancel</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
