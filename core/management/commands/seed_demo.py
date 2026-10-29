@@ -9,9 +9,11 @@ stock movements, status history and coupon redemptions are all consistent.
 """
 
 import random
+import re
 from datetime import timedelta
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 
 from django.contrib.sessions.backends.db import SessionStore
 from django.core.files.base import ContentFile
@@ -45,33 +47,42 @@ SIZES = ["XS", "S", "M", "L", "XL", "28", "30", "32", "34"]
 PRODUCTS = [
     ("Everyday Cotton Tee", "Women Tops", "Tonle Basics", "12.00", ["Cotton"], ["White", "Black", "Sky Blue"],
      ["XS", "S", "M", "L"], "A soft, breathable crew-neck tee for hot days."),
-    ("Linen Button Blouse", "Women Tops", "Kampot Linen", "28.00", ["Linen"], ["White", "Beige"],
+    ("Linen Button Blouse", "Women Tops", "Kampot Linen", "28.00", ["Linen"], ["Beige", "White"],
      ["S", "M", "L"], "Relaxed linen blouse with mother-of-pearl buttons."),
-    ("Silk Camisole", "Women Tops", "Angkor Atelier", "35.00", ["Silk"], ["Black", "Terracotta"],
+    ("Silk Camisole", "Women Tops", "Angkor Atelier", "35.00", ["Silk"], ["Beige", "Black"],
      ["XS", "S", "M"], "Bias-cut silk camisole with adjustable straps."),
-    ("Wrap Midi Dress", "Dresses", "Angkor Atelier", "48.00", ["Polyester"], ["Navy", "Terracotta", "Olive"],
+    ("Wrap Midi Dress", "Dresses", "Angkor Atelier", "48.00", ["Polyester"], ["Terracotta", "Navy", "Olive"],
      ["S", "M", "L"], "Flowing wrap dress that works from office to dinner."),
-    ("Linen Shirt Dress", "Dresses", "Kampot Linen", "52.00", ["Linen"], ["Beige", "White"],
+    ("Linen Shirt Dress", "Dresses", "Kampot Linen", "52.00", ["Linen"], ["Black", "Beige"],
      ["S", "M", "L", "XL"], "Belted shirt dress in washed linen."),
     ("High-Rise Straight Jeans", "Women Bottoms", "Mekong Denim", "45.00", ["Denim", "Cotton"], ["Navy", "Black"],
      ["28", "30", "32"], "Rigid denim with a straight leg and high rise."),
-    ("Pleated Wide Trousers", "Women Bottoms", "Angkor Atelier", "39.00", ["Polyester"], ["Black", "Beige"],
+    ("Pleated Wide Trousers", "Women Bottoms", "Angkor Atelier", "39.00", ["Polyester"], ["Beige", "Black"],
      ["S", "M", "L"], "Fluid wide-leg trousers with front pleats."),
     ("Oxford Shirt", "Men Shirts", "Tonle Basics", "26.00", ["Cotton"], ["White", "Sky Blue"],
      ["S", "M", "L", "XL"], "Classic button-down oxford shirt."),
-    ("Linen Camp Shirt", "Men Shirts", "Kampot Linen", "32.00", ["Linen"], ["Olive", "Beige", "White"],
+    ("Linen Camp Shirt", "Men Shirts", "Kampot Linen", "32.00", ["Linen"], ["Navy", "Olive", "White"],
      ["M", "L", "XL"], "Short-sleeve camp-collar shirt in pure linen."),
     ("Slim Chinos", "Men Pants", "Tonle Basics", "34.00", ["Cotton"], ["Beige", "Navy", "Olive"],
      ["30", "32", "34"], "Stretch-cotton chinos with a slim taper."),
-    ("Selvedge Denim", "Men Pants", "Mekong Denim", "68.00", ["Denim"], ["Navy"],
-     ["30", "32", "34"], "14oz selvedge denim, raw finish."),
-    ("Denim Trucker Jacket", "Outerwear", "Mekong Denim", "75.00", ["Denim"], ["Navy", "Black"],
+    ("Selvedge Denim Chore Jacket", "Women Outerwear", "Mekong Denim", "72.00", ["Denim"], ["Navy"],
+     ["S", "M", "L"], "Boxy chore jacket in raw selvedge denim with contrast stitching."),
+    ("Denim Trucker Jacket", "Men Outerwear", "Mekong Denim", "75.00", ["Denim"], ["Navy", "Black"],
      ["M", "L", "XL"], "Four-pocket trucker jacket."),
-    ("Light Rain Jacket", "Outerwear", "Tonle Basics", "55.00", ["Polyester"], ["Olive", "Black"],
+    ("Light Rain Jacket", "Men Outerwear", "Tonle Basics", "55.00", ["Polyester"], ["Black", "Olive"],
      ["S", "M", "L", "XL"], "Packable shell for the rainy season."),
     ("Woven Tote Bag", "Bags", "Angkor Atelier", "24.00", ["Cotton"], ["Beige", "Black"],
      ["M"], "Hand-woven tote with leather handles."),
 ]
+
+
+PHOTO_DIR = Path(__file__).resolve().parents[2] / "seed_assets" / "products"
+
+
+def product_photos(slug):
+    """Photos for a product: `<slug>.jpg`, then `<slug>-2.jpg`, `<slug>-3.jpg`, ..."""
+    found = [p for p in PHOTO_DIR.glob(f"{slug}*.jpg") if re.fullmatch(rf"{re.escape(slug)}(-\d+)?\.jpg", p.name)]
+    return sorted(found, key=lambda p: (p.stem != slug, p.stem))
 
 
 def placeholder_image(name, hex_color, filename):
@@ -137,9 +148,9 @@ class Command(BaseCommand):
             u.save()
             return u
 
-        admin = user("admin@sku-fashion.local", "Kimsear", "Seav", User.Role.ADMIN)
-        staff = user("staff@sku-fashion.local", "Phakdey", "Sin", User.Role.STAFF)
-        user("staff2@sku-fashion.local", "Samnang", "Sophat", User.Role.STAFF)
+        admin = user("admin@sku-fashion.local", "Bopha", "Keo", User.Role.ADMIN)
+        staff = user("staff@sku-fashion.local", "Visal", "Heng", User.Role.STAFF)
+        user("staff2@sku-fashion.local", "Malis", "Prak", User.Role.STAFF)
         customers = []
         for email, first, last, province, district in [
             ("dara@example.com", "Dara", "Chan", "Phnom Penh", "Chamkar Mon"),
@@ -157,7 +168,8 @@ class Command(BaseCommand):
 
     # ---- catalog -------------------------------------------------------------
     def catalog(self, staff):
-        tree = {"Women": ["Women Tops", "Dresses", "Women Bottoms"], "Men": ["Men Shirts", "Men Pants", "Outerwear"],
+        tree = {"Women": ["Women Tops", "Dresses", "Women Bottoms", "Women Outerwear"],
+                "Men": ["Men Shirts", "Men Pants", "Men Outerwear"],
                 "Accessories": ["Bags"]}
         cats = {}
         for top, children in tree.items():
@@ -183,10 +195,17 @@ class Command(BaseCommand):
             product = Product.objects.create(name=name, category=cats[cat], brand=brands[brand],
                                              base_price=Decimal(price), description=desc)
             product.materials.set([materials[m] for m in mats])
-            for j, col in enumerate(cols):
-                filename = f"{product.slug}-{col.lower().replace(' ', '-')}.png"
-                ProductImage.objects.create(product=product, color=colors[col], is_primary=(j == 0),
-                                            image=placeholder_image(name, colors[col].hex_code, filename))
+            photos = product_photos(product.slug)
+            if photos:  # the first photo shows the first colour; extra photos are general gallery shots
+                for k, path in enumerate(photos):
+                    ProductImage.objects.create(product=product, color=colors[cols[0]] if k == 0 else None,
+                                                is_primary=(k == 0),
+                                                image=ContentFile(path.read_bytes(), name=path.name))
+            else:
+                for j, col in enumerate(cols):
+                    filename = f"{product.slug}-{col.lower().replace(' ', '-')}.png"
+                    ProductImage.objects.create(product=product, color=colors[col], is_primary=(j == 0),
+                                                image=placeholder_image(name, colors[col].hex_code, filename))
             created, _ = VariantGenerator(product).generate([sizes[s] for s in szs], [colors[c] for c in cols],
                                                             safety_level=5)
             for v in created:
