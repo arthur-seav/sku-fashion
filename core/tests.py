@@ -50,6 +50,15 @@ class NavigationTests(TestCase):
             self.assertFalse(Review.objects.filter(moderated_at__lt=models.F("submitted_at")).exists())
             dara_items = OrderItem.objects.filter(order__user__email="dara@example.com", order__status="COMPLETED")
             self.assertTrue(dara_items.filter(review__isnull=True).exists())  # left for the live demo
+            from catalog.models import Product
+            for product in Product.objects.prefetch_related("images"):
+                primary = product.primary_image
+                self.assertTrue(primary and primary.image.name.endswith(".jpg"), f"{product} has no photo")
+            from accounts.models import User
+            team = {"Kimsear", "Seav", "Phakdey", "Sin", "Samnang", "Sophat"}  # SA document cover
+            names = set(User.objects.values_list("first_name", flat=True)) | set(
+                User.objects.values_list("last_name", flat=True))
+            self.assertFalse(team & names)
             with self.assertRaises(CommandError):
                 call_command("seed_demo", stdout=StringIO())
 

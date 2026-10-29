@@ -82,7 +82,7 @@ Every account uses the password `Demo-Pass-2026`. You can pick a different one w
 
 ### What the demo data contains
 
-- 14 products in 3 top-level categories (Women / Men / Accessories) and 98 SKU variants.
+- 14 products in 3 top-level categories (Women / Men / Accessories) and their SKU variants. Each product has a real photo from `core/seed_assets/products/<product-slug>.jpg` (extra gallery photos are `<slug>-2.jpg`, `<slug>-3.jpg`, ...); a product without a photo gets a generated placeholder. The photos were collected from the web for this coursework only; replace them with licensed images before making the repo or site public.
 - About 10 of the variants are below their safety level or sold out, so the low-stock badge and the stock report have data.
 - About 40 orders spread over the last 30 days, in every status. Each one went through the real checkout and workflow services, so stock movements, status history, payments and shipments all match.
 - Two fresh bank-transfer orders: one has a receipt waiting to be reconciled, the other is still unpaid.
