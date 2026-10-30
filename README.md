@@ -17,36 +17,53 @@ The requirements, use cases and ERD are in `../doc/SKU-Fashion.pdf`. Server depl
 
 ## 1. Setup
 
+### 1.0 What you need
+
+- **Python 3.12 or newer** (tested on 3.12, 3.13 and 3.14).
+- **Docker** (Docker Desktop on Windows/macOS) for PostgreSQL 17. A natively installed PostgreSQL 17 also works; see the note in 1.1.
+- **The code.** `git clone https://github.com/arthur-seav/sku-fashion.git`, or on GitHub: *Code → Download ZIP*. Do not zip somebody's working folder: it carries their `.env` (secrets), `.venv` (built for their machine) and `media/`.
+
+Commands below are for macOS/Linux; the Windows (PowerShell) version follows where it differs. Run everything from the project folder (the one with `manage.py`).
+
 ### 1.1 Database (PostgreSQL 17 in Docker)
 
 ```bash
-docker volume create sku_fashion_pgdata
 docker run -d --name sku_fashion_db --restart unless-stopped \
-  -e POSTGRES_DB=sku_fashion -e POSTGRES_USER=sku_fashion -e POSTGRES_PASSWORD='<choose-a-password>' \
+  -e POSTGRES_DB=sku_fashion -e POSTGRES_USER=sku_fashion -e POSTGRES_PASSWORD=choose-a-password \
   -p 127.0.0.1:54321:5432 -v sku_fashion_pgdata:/var/lib/postgresql/data \
   postgres:17
 ```
 
-Port 54321 is used so it does not clash with another local PostgreSQL. If you have the Docker Compose plugin you can write an equivalent `compose.yaml`; the plain `docker run` above needs nothing extra.
+Windows (PowerShell), on one line:
+
+```powershell
+docker run -d --name sku_fashion_db --restart unless-stopped -e POSTGRES_DB=sku_fashion -e POSTGRES_USER=sku_fashion -e POSTGRES_PASSWORD=choose-a-password -p 127.0.0.1:54321:5432 -v sku_fashion_pgdata:/var/lib/postgresql/data postgres:17
+```
+
+Port 54321 is used so it does not clash with another local PostgreSQL. **Without Docker:** create a database `sku_fashion` owned by a user `sku_fashion` in your own PostgreSQL, and set `DB_PORT=5432` in step 1.3.
 
 ### 1.2 Python environment
 
 ```bash
-python3.14 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Windows: `py -m venv .venv`, then `.venv\Scripts\Activate.ps1` (if PowerShell refuses to run scripts: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once), then `pip install -r requirements.txt`.
+
+In PyCharm: *Settings → Python Interpreter → Add → Existing* and pick `.venv`.
+
 ### 1.3 Configuration
 
 ```bash
-cp .env.example .env
+cp .env.example .env          # Windows: copy .env.example .env
 ```
 
 Edit `.env`:
 
-- `DB_PASSWORD`: the password from step 1.1.
-- `DJANGO_SECRET_KEY`: any long random string. You can make one with `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
+- `DB_PASSWORD`: the password you chose in step 1.1.
+- `DJANGO_SECRET_KEY`: any long random string. Make one with `python -c "import secrets; print(secrets.token_urlsafe(50))"`.
 
 `.env` is in `.gitignore`. Never commit it.
 
@@ -58,15 +75,26 @@ python manage.py seed_demo
 python manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/> for the store and <http://127.0.0.1:8000/backoffice/> for the back-office.
+Open <http://127.0.0.1:8000/> for the store and <http://127.0.0.1:8000/backoffice/> for the back-office. The demo accounts are in section 2. The product photos are copied from `core/seed_assets/` into `media/` by `seed_demo`.
 
 `seed_demo` only runs on an empty database. To start over:
 
 ```bash
 python manage.py flush --no-input
-rm -rf media/products media/receipts
+rm -rf media/products media/receipts     # Windows: Remove-Item -Recurse -Force media\products, media\receipts
 python manage.py seed_demo
 ```
+
+### 1.5 If something goes wrong
+
+| Message | Cause and fix |
+|---|---|
+| `KeyError: 'DJANGO_SECRET_KEY'` (or `DB_NAME`) | `.env` is missing or not in the project folder. Do step 1.3 |
+| `connection refused` / `could not connect to server` | The database container is not running: `docker start sku_fashion_db`. Check `DB_PORT` in `.env` |
+| `password authentication failed` | `DB_PASSWORD` in `.env` differs from step 1.1. The password is fixed when the volume is first created; to change it, `docker rm -f sku_fashion_db` and `docker volume rm sku_fashion_pgdata`, then redo 1.1 |
+| `The database already has catalog or order data` | `seed_demo` was already run. Use the start-over commands above |
+| `No module named 'django'` | The virtual environment is not active. Activate it (step 1.2) |
+| Port 8000 in use | `python manage.py runserver 8001` |
 
 ---
 
