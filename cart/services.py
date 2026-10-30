@@ -6,7 +6,7 @@ from decimal import Decimal
 from django.db import transaction
 
 from catalog.models import ProductVariant
-from promotions.pricing import PricingService
+from promotions.pricing import PriceQuote, PricingService
 
 from .models import Cart, CartItem
 
